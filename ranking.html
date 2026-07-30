@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ranking — Pádel Miramar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B0B0B; --card:#161616; --card-2:#1D1D1D; --line:#2A2A2A;
+    --lime:#D2F23A; --lime-dim:rgba(210,242,58,0.15);
+    --white:#F5F5F5; --grey:#9B9B9B;
+    --font-display:'Montserrat', sans-serif; --font-body:'Inter', sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--white);font-family:var(--font-body);line-height:1.5;}
+  a{color:inherit;text-decoration:none;}
+  button{font-family:var(--font-body);}
+  select{
+    background:var(--card-2);border:1px solid var(--line);border-radius:8px;color:var(--white);
+    padding:10px 12px;font-size:0.88rem;outline:none;
+  }
+  select:focus{border-color:var(--lime);}
+
+  nav{
+    display:flex;align-items:center;justify-content:space-between;padding:20px 4vw;
+    border-bottom:1px solid var(--line);flex-wrap:wrap;gap:14px;
+  }
+  .brand{display:flex;align-items:center;gap:14px;}
+  .brand-icon{width:44px;height:44px;border-radius:12px;background:var(--lime);display:flex;align-items:center;justify-content:center;}
+  .brand-name{font-family:var(--font-display);font-weight:900;font-size:1.15rem;letter-spacing:0.01em;line-height:1;}
+  .brand-name span{display:block;color:var(--lime);font-size:0.95rem;font-weight:800;}
+  .brand-divider{width:1px;height:28px;background:var(--line);margin:0 6px;}
+  .brand-season{font-family:var(--font-display);font-weight:700;color:var(--lime);font-size:0.85rem;letter-spacing:0.04em;line-height:1.3;}
+  .brand-season small{display:block;color:var(--grey);font-weight:600;font-size:0.68rem;letter-spacing:0.08em;}
+  .navlinks{display:none;gap:34px;font-weight:600;font-size:0.88rem;color:var(--grey);}
+  .navlinks a:hover{color:var(--white);}
+  .navlinks a.active{color:var(--lime);}
+  @media(min-width:920px){.navlinks{display:flex;}}
+
+  section{padding:50px 4vw;max-width:1200px;margin:0 auto;}
+  .sec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:16px;}
+  .sec-title{display:flex;align-items:center;gap:12px;font-family:var(--font-display);font-weight:800;font-size:1.4rem;}
+  .sec-icon{width:22px;height:22px;color:var(--lime);flex-shrink:0;}
+  .sec-note{color:var(--grey);font-size:0.88rem;max-width:38ch;}
+
+  .select-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:22px;}
+
+  .ranking-table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;}
+  .ranking-table th{text-align:left;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--grey);padding:14px 18px;border-bottom:1px solid var(--line);}
+  .ranking-table td{padding:14px 18px;border-bottom:1px solid var(--line);font-size:0.92rem;}
+  .ranking-table tr:last-child td{border-bottom:none;}
+  .ranking-table tr:hover td{background:var(--card-2);}
+  .puesto{font-family:var(--font-display);font-weight:800;color:var(--grey);}
+  .puesto.top{color:var(--lime);}
+  .jugador-nombre{font-weight:700;}
+  .jugador-lat{color:var(--grey);font-size:0.78rem;}
+  .puntos{font-family:var(--font-display);font-weight:800;color:var(--lime);text-align:right;}
+
+  .bracket-wrap{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:30px 20px;overflow-x:auto;}
+  .bracket{display:flex;gap:40px;min-width:700px;}
+  .round{display:flex;flex-direction:column;justify-content:space-around;gap:16px;flex:1;min-width:190px;}
+  .round-label{text-align:center;font-size:0.72rem;font-weight:700;color:var(--grey);letter-spacing:0.08em;margin-bottom:6px;}
+  .seed-match{background:var(--card-2);border:1px solid var(--line);border-radius:10px;}
+  .seed-row{display:flex;align-items:center;gap:10px;padding:9px 12px;font-size:0.8rem;}
+  .seed-row:first-child{border-bottom:1px solid var(--line);}
+  .seed-row.winner{color:var(--lime);font-weight:700;}
+  .seed-row.bye, .seed-row.tbd{color:var(--grey);font-style:italic;}
+
+  .empty-note{color:var(--grey);font-size:0.9rem;padding:26px;background:var(--card);border:1px dashed var(--line);border-radius:14px;text-align:center;}
+
+  footer{padding:28px 4vw 44px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;border-top:1px solid var(--line);color:var(--grey);font-size:0.82rem;}
+  .footer-admin{opacity:0.6;}
+  .footer-admin:hover{opacity:1;color:var(--lime);}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="brand">
+    <div class="brand-icon">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="9" r="6" stroke="#0B0B0B" stroke-width="1.6"/><path d="M8 9h8M12 5v8M9.5 6.5l5 5M14.5 6.5l-5 5" stroke="#0B0B0B" stroke-width="1.2"/><path d="M12 15v6" stroke="#0B0B0B" stroke-width="1.6"/></svg>
+    </div>
+    <div class="brand-name">PÁDEL<span>MIRAMAR</span></div>
+    <div class="brand-divider"></div>
+    <div class="brand-season">APERTURA<small>2026</small></div>
+  </div>
+  <div class="navlinks">
+    <a href="index.html">INICIO</a>
+    <a href="index.html#torneos">TORNEOS</a>
+    <a href="ranking.html" class="active">RANKING</a>
+    <a href="index.html#campeones">CAMPEONES</a>
+    <a href="index.html#inscripcion">INSCRIPCIÓN</a>
+  </div>
+</nav>
+
+<section id="ranking">
+  <div class="sec-head">
+    <div class="sec-title">
+      <svg class="sec-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 21h8M12 17v4M6 4h12v3a6 6 0 01-12 0V4z"/><path d="M6 5H3v2a4 4 0 004 4M18 5h3v2a4 4 0 01-4 4"/></svg>
+      RANKING DE JUGADORES
+    </div>
+    <p class="sec-note">Puntos acumulados por partidos ganados en todo el circuito.</p>
+  </div>
+  <div class="select-row">
+    <select id="rk-categoria"></select>
+  </div>
+  <div id="ranking-content"></div>
+</section>
+
+<section id="llaves">
+  <div class="sec-head">
+    <div class="sec-title">
+      <svg class="sec-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg>
+      LLAVE DEL TORNEO
+    </div>
+    <p class="sec-note">Elegí un torneo y una categoría para ver el cuadro de eliminación.</p>
+  </div>
+  <div class="select-row">
+    <select id="select-torneo"></select>
+    <select id="select-categoria"></select>
+  </div>
+  <div id="llave-content"></div>
+</section>
+
+<footer>
+  <div>© 2026 Pádel Miramar. Todos los derechos reservados.</div>
+  <a class="footer-admin" href="admin.html">Panel de administración</a>
+</footer>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import {
+  SUPABASE_URL, SUPABASE_ANON_KEY, CATEGORIAS, CATEGORIA_LABEL, LATERALIDADES,
+  roundLabel, loadState, calcularRankingPorCategoria
+} from './shared.js';
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let state = null;
+
+// ---- RANKING DE JUGADORES ----
+function populateCategoriaSelect(){
+  const sel = document.getElementById('rk-categoria');
+  sel.innerHTML = CATEGORIAS.map(c=>`<option value="${c}">${CATEGORIA_LABEL[c]}</option>`).join('');
+  sel.onchange = renderRanking;
+}
+
+function renderRanking(){
+  const cat = document.getElementById('rk-categoria').value;
+  const content = document.getElementById('ranking-content');
+  const jugadores = state.jugadores || [];
+  const ranking = calcularRankingPorCategoria(jugadores, cat).filter(j=>j.puntos>0);
+
+  if(ranking.length===0){
+    content.innerHTML = '<div class="empty-note">Todavía no hay puntos cargados en esta categoría.</div>';
+    return;
+  }
+
+  content.innerHTML = `
+    <table class="ranking-table">
+      <thead>
+        <tr><th>Puesto</th><th>Jugador</th><th style="text-align:right;">Puntos</th></tr>
+      </thead>
+      <tbody>
+        ${ranking.map(j=>`
+          <tr>
+            <td class="puesto ${j.puesto<=3?'top':''}">${j.puesto}</td>
+            <td>
+              <div class="jugador-nombre">${j.nombre}</div>
+              <div class="jugador-lat">${LATERALIDADES[j.lateralidad] || ''}</div>
+            </td>
+            <td class="puntos">${j.puntos}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+// ---- LLAVE DEL TORNEO ----
+function populateTorneoSelectors(){
+  const selT = document.getElementById('select-torneo');
+  const selC = document.getElementById('select-categoria');
+
+  selT.innerHTML = state.torneos.map(t=>`<option value="${t.id}">${t.nombre}</option>`).join('');
+
+  function refreshCatOptions(){
+    const t = state.torneos.find(x=>x.id===selT.value);
+    selC.innerHTML = (t?.categorias||[]).map(c=>`<option value="${c}">${CATEGORIA_LABEL[c]}</option>`).join('');
+  }
+  refreshCatOptions();
+
+  selT.onchange = ()=>{ refreshCatOptions(); renderLlave(); };
+  selC.onchange = renderLlave;
+}
+
+function teamLabel(team){
+  if(!team) return 'Por definir';
+  if(team.bye) return 'BYE';
+  return `${team.j1} / ${team.j2}`;
+}
+function teamRowClass(team, winner){
+  if(!team) return 'tbd';
+  if(team.bye) return 'bye';
+  if(winner && winner.id===team.id) return 'winner';
+  return '';
+}
+
+function renderLlave(){
+  const t = state.torneos.find(x=>x.id===document.getElementById('select-torneo').value);
+  const cat = document.getElementById('select-categoria').value;
+  const content = document.getElementById('llave-content');
+  if(!t || !cat){ content.innerHTML = '<div class="empty-note">Elegí un torneo y una categoría.</div>'; return; }
+  const rounds = t.brackets[cat];
+  if(!rounds){ content.innerHTML = '<div class="empty-note">Todavía no se generó la llave para esta categoría.</div>'; return; }
+
+  content.innerHTML = `<div class="bracket-wrap"><div class="bracket">
+    ${rounds.map((round,ri)=>`
+      <div class="round">
+        <div class="round-label">${roundLabel(ri, rounds.length)}</div>
+        ${round.map(m=>`
+          <div class="seed-match">
+            <div class="seed-row ${teamRowClass(m.teamA,m.winner)}">${teamLabel(m.teamA)}</div>
+            <div class="seed-row ${teamRowClass(m.teamB,m.winner)}">${teamLabel(m.teamB)}</div>
+          </div>
+        `).join('')}
+      </div>
+    `).join('')}
+  </div></div>`;
+}
+
+// ---- Polling en tiempo real ----
+async function pollUpdates(){
+  try{
+    const newState = await loadState(supabase);
+    if(JSON.stringify(state) !== JSON.stringify(newState)){
+      state = newState;
+      renderRanking();
+      renderLlave();
+    }
+  }catch(e){
+    console.error('Error en polling:', e);
+  }
+}
+
+(async function init(){
+  try{
+    state = await loadState(supabase);
+    populateCategoriaSelect();
+    renderRanking();
+    populateTorneoSelectors();
+    renderLlave();
+    setInterval(pollUpdates, 3000);
+  }catch(e){
+    console.error(e);
+    document.getElementById('ranking-content').innerHTML = '<div class="empty-note">No se pudo conectar con la base de datos.</div>';
+  }
+})();
+</script>
+
+</body>
+</html>

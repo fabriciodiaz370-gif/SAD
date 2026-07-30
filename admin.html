@@ -163,6 +163,7 @@ let activeTorneoId = null;
 let activeTab = {};
 let currentSection = 'torneos';
 let lastStateJson = '';
+let isSaving = false;
 
 function toast(msg){
   toastEl.textContent = msg;
@@ -171,12 +172,16 @@ function toast(msg){
 }
 
 async function persist(){
+  isSaving = true;
   try{
     await saveState(supabase, state);
+    lastStateJson = JSON.stringify(state);
     toast('Guardado ✓');
   }catch(e){
     console.error(e);
     toast('Error al guardar');
+  }finally{
+    isSaving = false;
   }
 }
 
@@ -620,6 +625,7 @@ function escapeHtml(str){
 }
 
 async function pollUpdatesAdmin(){
+  if(isSaving) return;
   try{
     const newState = await loadState(supabase);
     const newStateJson = JSON.stringify(newState);
