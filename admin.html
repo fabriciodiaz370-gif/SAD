@@ -131,14 +131,12 @@
 
   .file-input{display:none;}
   
-  /* Estilos para configuracion de puntos */
   .puntos-config{display:grid;grid-template-columns:1fr;gap:12px;}
   @media(min-width:400px){.puntos-config{grid-template-columns:1fr 1fr;}}
   .puntos-config-item{display:flex;align-items:center;gap:10px;}
   .puntos-config-item label{margin-bottom:0;flex:1;}
   .puntos-config-item input{width:80px;text-align:center;}
   
-  /* Estilos para edicion de jugadores en configuracion */
   .jugadores-config-table{width:100%;border-collapse:collapse;}
   .jugadores-config-table th{text-align:left;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--grey);padding:10px 12px;border-bottom:1px solid var(--line);}
   .jugadores-config-table td{padding:10px 12px;border-bottom:1px solid var(--line);font-size:0.85rem;}
@@ -147,12 +145,15 @@
   .puntos-input{width:70px;text-align:center;padding:6px 8px;font-size:0.8rem;}
   .categoria-badge{font-size:0.7rem;font-weight:700;padding:4px 8px;border-radius:6px;background:var(--lime-dim);color:var(--lime);}
   .actions-cell{display:flex;gap:6px;}
+  
+  .error-message{color:var(--red);font-size:0.85rem;padding:10px;background:var(--red-dim);border-radius:8px;margin-bottom:15px;}
+  .db-status{font-size:0.75rem;color:var(--grey);margin-top:5px;}
 </style>
 </head>
 <body>
 
 <nav>
-  <div class="brand"><span class="dot"></span>PADEL MIRAMAR · ADMIN</div>
+  <div class="brand"><span class="dot"></span>PADEL MIRAMAR - ADMIN</div>
   <a class="navlink" href="index.html">Ver sitio publico -></a>
 </nav>
 
@@ -162,7 +163,10 @@
   <button class="section-tab" data-section="configuracion">Configuracion</button>
 </div>
 
-<div id="app" class="loading">Cargando datos...</div>
+<div id="app" class="loading">
+  <div>Cargando datos...</div>
+  <div class="db-status" id="db-status"></div>
+</div>
 <div class="toast" id="toast">Guardado OK</div>
 
 <script type="module">
@@ -171,12 +175,13 @@ import {
   SUPABASE_URL, SUPABASE_ANON_KEY, CATEGORIAS, CATEGORIA_LABEL, LATERALIDADES,
   uid, generateBracket, propagateWinner, roundLabel, loadState, saveState, isAprobada, 
   POINTS_PER_WIN, sumarPuntosAlGanador, POINTS_BY_POSITION, crearOActualizarJugadoresDesdePareja,
-  asignarPuntosPorPosicion, getPosicionFinal
+  asignarPuntosPorPosicion, getPosicionFinal, loadLocalState, seedDemoData
 } from './shared.js';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const app = document.getElementById('app');
 const toastEl = document.getElementById('toast');
+const dbStatusEl = document.getElementById('db-status');
 
 let state = null;
 let activeTorneoId = null;
@@ -197,9 +202,13 @@ async function persist(){
     await saveState(supabase, state);
     lastStateJson = JSON.stringify(state);
     toast('Guardado OK');
+    dbStatusEl.textContent = 'Base de datos: Conectado';
+    dbStatusEl.style.color = 'var(--lime)';
   }catch(e){
     console.error(e);
-    toast('Error al guardar');
+    toast('Error al guardar - Usando almacenamiento local');
+    dbStatusEl.textContent = 'Base de datos: Modo local';
+    dbStatusEl.style.color = 'var(--red)';
   }finally{
     isSaving = false;
   }
@@ -938,7 +947,42 @@ async function pollUpdatesAdmin(){
 // ---- INIT ----
 (async function init(){
   try{
+    dbStatusEl.textContent = 'Conectando a la base de datos...';
+    dbStatusEl.style.color = 'var(--grey)';
+    
+    // Intentar cargar de Supabase
     state = await loadState(supabase);
+    
+    // Si no hay datos o fallo, cargar datos de ejemplo
+    if(!state || !state.torneos) {
+      state = seedDemoData();
+      dbStatusEl.textContent = 'Usando datos de ejemplo (Supabase no disponible)';
+      dbStatusEl.style.color = 'var(--red)';
+    } else {
+      dbStatusEl.textContent = 'Base de datos: Conectado';
+      dbStatusEl.style.color = 'var(--lime)';
+    }
+    
+    if(!state.jugadores) state.jugadores = [];
+    if(!state.configuracion) state.configuracion = { puntos_por_posicion: { ...POINTS_BY_POSITION } };
+    
+    state.torneos.forEach(torneo => {
+      if(!torneo.puntos_por_posicion) {
+        torneo.puntos_por_posicion = { ...POINTS_BY_POSITION };
+      }
+    });
+    
+    lastStateJson = JSON.stringify(state);
+    activeTorneoId = state.torneos[0]?.id || null;
+    render();
+    setInterval(pollUpdatesAdmin, 2000);
+  }catch(e){
+    console.error('Error en init:', e);
+    dbStatusEl.textContent = 'Error de conexion - Usando datos locales';
+    dbStatusEl.style.color = 'var(--red)';
+    
+    // Cargar datos de ejemplo si falla todo
+    state = seedDemoData();
     if(!state.jugadores) state.jugadores = [];
     if(!state.configuracion) state.configuracion = { puntos_por_posicion: { ...POINTS_BY_POSITION } };
     state.torneos.forEach(torneo => {
@@ -950,9 +994,6 @@ async function pollUpdatesAdmin(){
     activeTorneoId = state.torneos[0]?.id || null;
     render();
     setInterval(pollUpdatesAdmin, 2000);
-  }catch(e){
-    console.error(e);
-    app.innerHTML = `<div class="panel"><div class="empty-state">Error conectando con la base de datos.</div></div>`;
   }
 })();
 </script>

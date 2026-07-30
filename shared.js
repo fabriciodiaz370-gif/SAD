@@ -292,19 +292,54 @@ export function crearOActualizarJugadoresDesdePareja(state, pareja) {
 // Capa de datos (Supabase) - un unico documento JSON en la tabla "torneos"
 // ============================================================
 export async function loadState(supabase){
-  const { data, error } = await supabase.from('torneos').select('data').eq('id','main').maybeSingle();
-  if(error) throw error;
-  if(data && data.data) return data.data;
-  const seeded = seedDemoData();
-  await saveState(supabase, seeded);
-  return seeded;
+  try {
+    const { data, error } = await supabase.from('torneos').select('data').eq('id','main').maybeSingle();
+    if(error) {
+      console.error('Error al cargar de Supabase:', error);
+      // Si falla Supabase, cargar datos de ejemplo
+      const seeded = seedDemoData();
+      return seeded;
+    }
+    if(data && data.data) return data.data;
+    const seeded = seedDemoData();
+    await saveState(supabase, seeded);
+    return seeded;
+  } catch (e) {
+    console.error('Error en loadState:', e);
+    // Si falla la conexion, cargar datos de ejemplo
+    const seeded = seedDemoData();
+    return seeded;
+  }
 }
 
 export async function saveState(supabase, state){
-  const { error } = await supabase.from('torneos').upsert({
-    id: 'main', data: state, updated_at: new Date().toISOString()
-  });
-  if(error) throw error;
+  try {
+    const { error } = await supabase.from('torneos').upsert({
+      id: 'main', data: state, updated_at: new Date().toISOString()
+    });
+    if(error) {
+      console.error('Error al guardar en Supabase:', error);
+      // Guardar en localStorage como backup
+      localStorage.setItem('padelState', JSON.stringify(state));
+    }
+  } catch (e) {
+    console.error('Error en saveState:', e);
+    // Guardar en localStorage como backup
+    localStorage.setItem('padelState', JSON.stringify(state));
+  }
+}
+
+// Funcion para cargar estado desde localStorage
+export function loadLocalState() {
+  const saved = localStorage.getItem('padelState');
+  if(saved) {
+    try {
+      return JSON.parse(saved);
+    } catch(e) {
+      console.error('Error al parsear localStorage:', e);
+    }
+  }
+  return null;
 }
 
 export function roundLabel(idx, total){
