@@ -509,6 +509,17 @@ function renderJugadoresSection(){
       <h2>Gestión de Jugadores
         <button class="btn btn-primary btn-sm" id="btn-nuevo-jugador">+ Nuevo Jugador</button>
       </h2>
+      <div class="add-jugador-form" id="add-jugador-form" style="display:none;">
+        <input id="new-jug-nombre" placeholder="Nombre y apellido">
+        <select id="new-jug-cat">
+          ${CATEGORIAS.map(c=>`<option value="${c}">${CATEGORIA_LABEL[c]}</option>`).join('')}
+        </select>
+        <select id="new-jug-lat">
+          ${Object.entries(LATERALIDADES).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}
+        </select>
+        <button class="btn btn-primary btn-sm" id="btn-guardar-nuevo-jugador">Guardar</button>
+        <button class="btn btn-outline btn-sm" id="btn-cancelar-nuevo-jugador">Cancelar</button>
+      </div>
       <div id="jugadores-list"></div>
     </div>
   `;
@@ -536,7 +547,21 @@ function renderJugadoresSection(){
     `).join('');
   }
 
-  document.getElementById('btn-nuevo-jugador').onclick = crearJugador;
+  const formEl = document.getElementById('add-jugador-form');
+
+  document.getElementById('btn-nuevo-jugador').onclick = ()=>{
+    formEl.style.display = formEl.style.display==='none' ? 'flex' : 'none';
+    if(formEl.style.display==='flex') document.getElementById('new-jug-nombre').focus();
+  };
+
+  document.getElementById('btn-cancelar-nuevo-jugador').onclick = ()=>{
+    formEl.style.display = 'none';
+  };
+
+  document.getElementById('btn-guardar-nuevo-jugador').onclick = crearJugador;
+  document.getElementById('new-jug-nombre').addEventListener('keydown', e=>{
+    if(e.key==='Enter'){ e.preventDefault(); crearJugador(); }
+  });
 
   document.querySelectorAll('[data-edit]').forEach(btn=>{
     btn.onclick = ()=>editarJugador(btn.dataset.edit);
@@ -552,10 +577,13 @@ function renderJugadoresSection(){
 }
 
 function crearJugador(){
-  const nombre = prompt('Nombre del jugador:');
-  if(!nombre) return;
+  const nombre = document.getElementById('new-jug-nombre').value.trim();
+  if(!nombre){ toast('Ingresá un nombre'); return; }
+  const categoria = document.getElementById('new-jug-cat').value;
+  const lateralidad = document.getElementById('new-jug-lat').value;
+  state.jugadores = state.jugadores || [];
   state.jugadores.push({
-    id: uid('j'), nombre, lateralidad:'diestro', categoria:'7ma', foto:'', historial:[]
+    id: uid('j'), nombre, lateralidad, categoria, foto:'', historial:[]
   });
   persist(); render();
 }

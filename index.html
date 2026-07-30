@@ -188,6 +188,21 @@
   <div class="torneos-grid" id="torneos-grid"></div>
 </section>
 
+<section id="llaves">
+  <div class="sec-head">
+    <div class="sec-title">
+      <svg class="sec-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg>
+      LLAVES
+    </div>
+    <p class="sec-note">Elegí un torneo y una categoría para ver el cuadro de eliminación.</p>
+  </div>
+  <div class="select-row">
+    <select id="select-torneo"></select>
+    <select id="select-categoria"></select>
+  </div>
+  <div id="llave-content"></div>
+</section>
+
 <section id="campeones">
   <div class="sec-head">
     <div class="sec-title">
@@ -281,18 +296,60 @@ function renderTorneosGrid(){
 }
 
 function populateSelectors(){
+  const selT = document.getElementById('select-torneo');
+  const selC = document.getElementById('select-categoria');
   const inscT = document.getElementById('insc-torneo');
   const inscC = document.getElementById('insc-categoria');
 
-  inscT.innerHTML = state.torneos.map(t=>`<option value="${t.id}">${t.nombre}</option>`).join('');
+  selT.innerHTML = state.torneos.map(t=>`<option value="${t.id}">${t.nombre}</option>`).join('');
+  inscT.innerHTML = selT.innerHTML;
 
   function refreshCatOptions(torneoId, target){
     const t = state.torneos.find(x=>x.id===torneoId);
     target.innerHTML = (t?.categorias||[]).map(c=>`<option value="${c}">${CATEGORIA_LABEL[c]}</option>`).join('');
   }
 
+  refreshCatOptions(selT.value, selC);
   refreshCatOptions(inscT.value, inscC);
+
+  selT.onchange = ()=>{ refreshCatOptions(selT.value, selC); renderLlave(); };
+  selC.onchange = renderLlave;
   inscT.onchange = ()=> refreshCatOptions(inscT.value, inscC);
+}
+
+function teamLabel(team){
+  if(!team) return 'Por definir';
+  if(team.bye) return 'BYE';
+  return `${team.j1} / ${team.j2}`;
+}
+function teamRowClass(team, winner){
+  if(!team) return 'tbd';
+  if(team.bye) return 'bye';
+  if(winner && winner.id===team.id) return 'winner';
+  return '';
+}
+
+function renderLlave(){
+  const t = state.torneos.find(x=>x.id===document.getElementById('select-torneo').value);
+  const cat = document.getElementById('select-categoria').value;
+  const content = document.getElementById('llave-content');
+  if(!t || !cat){ content.innerHTML = '<div class="empty-note">Elegí un torneo y una categoría.</div>'; return; }
+  const rounds = t.brackets[cat];
+  if(!rounds){ content.innerHTML = '<div class="empty-note">Todavía no se generó la llave para esta categoría.</div>'; return; }
+
+  content.innerHTML = `<div class="bracket-wrap"><div class="bracket">
+    ${rounds.map((round,ri)=>`
+      <div class="round">
+        <div class="round-label">${roundLabel(ri, rounds.length)}</div>
+        ${round.map(m=>`
+          <div class="seed-match">
+            <div class="seed-row ${teamRowClass(m.teamA,m.winner)}">${teamLabel(m.teamA)}</div>
+            <div class="seed-row ${teamRowClass(m.teamB,m.winner)}">${teamLabel(m.teamB)}</div>
+          </div>
+        `).join('')}
+      </div>
+    `).join('')}
+  </div></div>`;
 }
 
 function renderCampeones(){
@@ -356,6 +413,7 @@ async function pollUpdates(){
       renderHeroStats();
       renderTorneosGrid();
       populateSelectors();
+      renderLlave();
       renderCampeones();
     }
   }catch(e){
@@ -369,6 +427,7 @@ async function pollUpdates(){
     renderHeroStats();
     renderTorneosGrid();
     populateSelectors();
+    renderLlave();
     renderCampeones();
     
     // Iniciar polling cada 3 segundos
