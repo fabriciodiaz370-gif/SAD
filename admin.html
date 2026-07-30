@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin — Pádel Miramar</title>
+<title>Admin - Padel Miramar</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -131,14 +131,14 @@
 
   .file-input{display:none;}
   
-  /* Estilos para configuración de puntos */
+  /* Estilos para configuracion de puntos */
   .puntos-config{display:grid;grid-template-columns:1fr;gap:12px;}
   @media(min-width:400px){.puntos-config{grid-template-columns:1fr 1fr;}}
   .puntos-config-item{display:flex;align-items:center;gap:10px;}
   .puntos-config-item label{margin-bottom:0;flex:1;}
   .puntos-config-item input{width:80px;text-align:center;}
   
-  /* Estilos para edición de jugadores en configuración */
+  /* Estilos para edicion de jugadores en configuracion */
   .jugadores-config-table{width:100%;border-collapse:collapse;}
   .jugadores-config-table th{text-align:left;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--grey);padding:10px 12px;border-bottom:1px solid var(--line);}
   .jugadores-config-table td{padding:10px 12px;border-bottom:1px solid var(--line);font-size:0.85rem;}
@@ -152,18 +152,18 @@
 <body>
 
 <nav>
-  <div class="brand"><span class="dot"></span>PÁDEL MIRAMAR · ADMIN</div>
-  <a class="navlink" href="index.html">Ver sitio público →</a>
+  <div class="brand"><span class="dot"></span>PADEL MIRAMAR · ADMIN</div>
+  <a class="navlink" href="index.html">Ver sitio publico -></a>
 </nav>
 
 <div class="section-tabs">
   <button class="section-tab active" data-section="torneos">Torneos & Llave</button>
   <button class="section-tab" data-section="jugadores">Jugadores</button>
-  <button class="section-tab" data-section="configuracion">Configuración</button>
+  <button class="section-tab" data-section="configuracion">Configuracion</button>
 </div>
 
-<div id="app" class="loading">Cargando datos…</div>
-<div class="toast" id="toast">Guardado ✓</div>
+<div id="app" class="loading">Cargando datos...</div>
+<div class="toast" id="toast">Guardado OK</div>
 
 <script type="module">
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -196,7 +196,7 @@ async function persist(){
   try{
     await saveState(supabase, state);
     lastStateJson = JSON.stringify(state);
-    toast('Guardado ✓');
+    toast('Guardado OK');
   }catch(e){
     console.error(e);
     toast('Error al guardar');
@@ -227,7 +227,7 @@ function render(){
   `;
   app.innerHTML = html;
 
-  // Botones de sección
+  // Botones de seccion
   document.querySelectorAll('.section-tab').forEach(btn=>{
     btn.onclick = ()=>{
       document.querySelectorAll('.section-tab').forEach(b=>b.classList.remove('active'));
@@ -246,7 +246,7 @@ function render(){
   }
 }
 
-// ---- SECCIÓN TORNEOS ----
+// ---- SECCION TORNEOS ----
 function renderTorneosSection(){
   const t = activeTorneo();
   const el = document.getElementById('section-torneos');
@@ -259,7 +259,7 @@ function renderTorneosSection(){
       const div = document.createElement('div');
       div.className = 'torneo-item' + (tr.id===activeTorneoId ? ' active' : '');
       const totalParejas = Object.values(tr.parejas).reduce((a,arr)=>a+arr.length,0);
-      div.innerHTML = `${escapeHtml(tr.nombre)}<small>${escapeHtml(tr.fecha)} · ${totalParejas} parejas</small>`;
+      div.innerHTML = `${escapeHtml(tr.nombre)}<small>${escapeHtml(tr.fecha)} - ${totalParejas} parejas</small>`;
       div.onclick = ()=>{ activeTorneoId = tr.id; render(); };
       list.appendChild(div);
     });
@@ -286,7 +286,7 @@ function renderTorneoPanel(t){
         <div class="field"><label>Fecha</label><input id="f-fecha" value="${escapeHtml(t.fecha)}"></div>
         <div class="field"><label>Lugar</label><input id="f-lugar" value="${escapeHtml(t.lugar)}"></div>
       </div>
-      <label style="margin-top:14px;">Categorías</label>
+      <label style="margin-top:14px;">Categorias</label>
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
         ${CATEGORIAS.map(c=>`<div class="check-pill ${t.categorias.includes(c)?'active':''}" data-cat="${c}">${CATEGORIA_LABEL[c]}</div>`).join('')}
       </div>
@@ -294,7 +294,7 @@ function renderTorneoPanel(t){
     ${renderPostulacionesPanel(t)}
     <div class="panel">
       <h2>Parejas y llave</h2>
-      ${t.categorias.length===0 ? '<div class="empty-state">Elige al menos una categoría.</div>' : `
+      ${t.categorias.length===0 ? '<div class="empty-state">Elige al menos una categoria.</div>' : `
         <div class="tabs" id="cat-tabs">
           ${t.categorias.map(c=>`<div class="tab ${ (activeTab[t.id]||t.categorias[0])===c ? 'active':''}" data-cat="${c}">${CATEGORIA_LABEL[c]}</div>`).join('')}
         </div>
@@ -310,7 +310,7 @@ function wireTorneoPanel(t){
   document.getElementById('f-lugar').addEventListener('change', e=>{ t.lugar=e.target.value; persist(); });
 
   document.getElementById('btn-borrar-torneo').onclick = ()=>{
-    if(!confirm(`¿Eliminar "${t.nombre}"?`)) return;
+    if(!confirm(`Eliminar "${t.nombre}"?`)) return;
     state.torneos = state.torneos.filter(x=>x.id!==t.id);
     activeTorneoId = state.torneos[0]?.id || null;
     persist(); render();
@@ -320,13 +320,12 @@ function wireTorneoPanel(t){
     el.onclick = ()=>{
       const cat = el.dataset.cat;
       if(t.categorias.includes(cat)){
-        if(!confirm(`¿Quitar ${CATEGORIA_LABEL[cat]}?`)) return;
+        if(!confirm(`Quitar ${CATEGORIA_LABEL[cat]}?`)) return;
         t.categorias = t.categorias.filter(c=>c!==cat);
         delete t.parejas[cat]; delete t.brackets[cat];
       } else {
         t.categorias.push(cat);
         t.parejas[cat] = []; t.brackets[cat] = null;
-        // Inicializar puntos por posición para esta categoría
         if(!t.puntos_por_posicion) t.puntos_por_posicion = {};
         if(!t.puntos_por_posicion[cat]) t.puntos_por_posicion[cat] = { ...POINTS_BY_POSITION };
       }
@@ -359,7 +358,7 @@ function renderPostulacionesPanel(t){
           const cat = Object.keys(t.parejas).find(c=>(t.parejas[c]||[]).find(x=>x.id===p.id));
           return `
             <div class="pareja-row">
-              <span class="nombre">${escapeHtml(p.j1)} / ${escapeHtml(p.j2)}<span style="color:var(--grey);font-size:0.78rem;"> — ${cat?CATEGORIA_LABEL[cat]:'N/A'}</span></span>
+              <span class="nombre">${escapeHtml(p.j1)} / ${escapeHtml(p.j2)}<span style="color:var(--grey);font-size:0.78rem;"> - ${cat?CATEGORIA_LABEL[cat]:'N/A'}</span></span>
               <span style="display:flex;gap:6px;">
                 <button class="btn btn-primary btn-sm" data-aprobar="${cat}:${p.id}">Aprobar</button>
                 <button class="btn btn-danger btn-sm" data-rechazar="${cat}:${p.id}">Rechazar</button>
@@ -379,7 +378,6 @@ function wirePostulacionesPanel(t){
       const p = (t.parejas[cat]||[]).find(x=>x.id===id);
       if(p){ 
         p.estado = 'aprobada';
-        // Crear jugadores si no existen
         crearOActualizarJugadoresDesdePareja(state, p);
         persist(); render(); 
       }
@@ -388,7 +386,7 @@ function wirePostulacionesPanel(t){
   document.querySelectorAll('[data-rechazar]').forEach(btn=>{
     btn.onclick = ()=>{
       const [cat, id] = btn.dataset.rechazar.split(':');
-      if(!confirm('¿Rechazar?')) return;
+      if(!confirm('Rechazar?')) return;
       t.parejas[cat] = (t.parejas[cat]||[]).filter(x=>x.id!==id);
       persist(); render();
     };
@@ -407,7 +405,7 @@ function renderCategoriaContent(t, cat){
             parejas.map(p=>`
               <div class="pareja-row">
                 <span class="nombre">${escapeHtml(p.j1)} / ${escapeHtml(p.j2)}</span>
-                <span class="x" data-remove="${p.id}">✕</span>
+                <span class="x" data-remove="${p.id}">X</span>
               </div>
             `).join('')
           }
@@ -422,13 +420,13 @@ function renderCategoriaContent(t, cat){
         </button>
         ${bracket ? `
           <button class="btn btn-primary btn-block" id="btn-asignar-puntos" style="margin-top:10px;">
-            Asignar Puntos por Posición
+            Asignar Puntos por Posicion
           </button>
         ` : ''}
       </div>
       <div>
-        <label>Llave — ${CATEGORIA_LABEL[cat]}</label>
-        ${ bracket ? '<div class="bracket-wrap"><div class="bracket" id="bracket-view"></div></div>' : '<div class="empty-state">Generá la llave.</div>' }
+        <label>Llave - ${CATEGORIA_LABEL[cat]}</label>
+        ${ bracket ? '<div class="bracket-wrap"><div class="bracket" id="bracket-view"></div></div>' : '<div class="empty-state">Genera la llave.</div>' }
       </div>
     </div>
   `;
@@ -445,21 +443,18 @@ function wireCategoriaContent(t, cat){
   document.getElementById('btn-add-pareja').onclick = ()=>{
     const j1 = document.getElementById('new-j1').value.trim();
     const j2 = document.getElementById('new-j2').value.trim();
-    if(!j1 || !j2){ toast('Completá los nombres'); return; }
+    if(!j1 || !j2){ toast('Completa los nombres'); return; }
     
     const nuevaPareja = { id: uid('p'), j1_id: null, j2_id: null, j1, j2, telefono:'', estado:'aprobada' };
     t.parejas[cat].push(nuevaPareja);
-    
-    // Crear jugadores automáticamente
     crearOActualizarJugadoresDesdePareja(state, nuevaPareja);
-    
     persist(); render();
   };
 
   const btnGenerar = document.getElementById('btn-generar-llave');
   if(btnGenerar){
     btnGenerar.onclick = ()=>{
-      if(t.brackets[cat] && !confirm('¿Reiniciar?')) return;
+      if(t.brackets[cat] && !confirm('Reiniciar?')) return;
       t.brackets[cat] = generateBracket(t.parejas[cat]);
       persist(); render();
     };
@@ -468,10 +463,10 @@ function wireCategoriaContent(t, cat){
   const btnAsignarPuntos = document.getElementById('btn-asignar-puntos');
   if(btnAsignarPuntos){
     btnAsignarPuntos.onclick = ()=>{
-      if(!confirm('¿Asignar puntos a todas las parejas según su posición final?')) return;
+      if(!confirm('Asignar puntos a todas las parejas segun su posicion final?')) return;
       asignarPuntosPorPosicion(state, t.id, cat);
       persist(); render();
-      toast('Puntos asignados ✓');
+      toast('Puntos asignados OK');
     };
   }
 
@@ -512,13 +507,13 @@ function renderBracketView(t, cat){
       matchEl.innerHTML = `
         <div class="side ${sideClass(match.teamA)}">
           <span>${teamLabel(match.teamA)}</span>
-          ${canDecide ? `<button class="win-btn" data-round="${ri}" data-match="${mi}" data-side="A">Ganó</button>` : ''}
+          ${canDecide ? `<button class="win-btn" data-round="${ri}" data-match="${mi}" data-side="A">Gano</button>` : ''}
         </div>
         <div class="side ${sideClass(match.teamB)}">
           <span>${teamLabel(match.teamB)}</span>
-          ${canDecide ? `<button class="win-btn" data-round="${ri}" data-match="${mi}" data-side="B">Ganó</button>` : ''}
+          ${canDecide ? `<button class="win-btn" data-round="${ri}" data-match="${mi}" data-side="B">Gano</button>` : ''}
         </div>
-        ${decided ? `<div class="decided-tag">Definido ✓</div>` : ''}
+        ${decided ? `<div class="decided-tag">Definido OK</div>` : ''}
       `;
       roundEl.appendChild(matchEl);
     });
@@ -531,7 +526,6 @@ function renderBracketView(t, cat){
       const match = rounds[ri][mi];
       const winner = btn.dataset.side==='A' ? match.teamA : match.teamB;
       propagateWinner(rounds, ri, mi, winner);
-      // Sumar puntos al ganador (por partido ganado)
       if(winner && !winner.bye){
         sumarPuntosAlGanador(state, t.id, cat, winner.id);
       }
@@ -553,12 +547,12 @@ function crearTorneo(){
   persist(); render();
 }
 
-// ---- SECCIÓN JUGADORES ----
+// ---- SECCION JUGADORES ----
 function renderJugadoresSection(){
   const el = document.getElementById('section-jugadores');
   el.innerHTML = `
     <div class="panel">
-      <h2>Gestión de Jugadores
+      <h2>Gestion de Jugadores
         <button class="btn btn-primary btn-sm" id="btn-nuevo-jugador">+ Nuevo Jugador</button>
       </h2>
       <div class="add-jugador-form" id="add-jugador-form" style="display:none;">
@@ -578,7 +572,7 @@ function renderJugadoresSection(){
 
   const list = document.getElementById('jugadores-list');
   if(!state.jugadores || state.jugadores.length===0){
-    list.innerHTML = '<div class="empty-state">Sin jugadores aún.</div>';
+    list.innerHTML = '<div class="empty-state">Sin jugadores aun.</div>';
   } else {
     list.innerHTML = state.jugadores.map(j=>`
       <div class="jugador-row">
@@ -588,7 +582,7 @@ function renderJugadoresSection(){
           </div>
           <div>
             <div class="nombre">${escapeHtml(j.nombre)}</div>
-            <div style="font-size:0.75rem;color:var(--grey);">${CATEGORIA_LABEL[j.categoria] || j.categoria} · ${LATERALIDADES[j.lateralidad] || j.lateralidad}</div>
+            <div style="font-size:0.75rem;color:var(--grey);">${CATEGORIA_LABEL[j.categoria] || j.categoria} - ${LATERALIDADES[j.lateralidad] || j.lateralidad}</div>
           </div>
         </div>
         <span style="display:flex;gap:6px;">
@@ -621,7 +615,7 @@ function renderJugadoresSection(){
 
   document.querySelectorAll('[data-delete]').forEach(btn=>{
     btn.onclick = ()=>{
-      if(!confirm('¿Borrar jugador?')) return;
+      if(!confirm('Borrar jugador?')) return;
       state.jugadores = state.jugadores.filter(j=>j.id!==btn.dataset.delete);
       persist(); render();
     };
@@ -630,7 +624,7 @@ function renderJugadoresSection(){
 
 function crearJugador(){
   const nombre = document.getElementById('new-jug-nombre').value.trim();
-  if(!nombre){ toast('Ingresá un nombre'); return; }
+  if(!nombre){ toast('Ingresa un nombre'); return; }
   const categoria = document.getElementById('new-jug-cat').value;
   const lateralidad = document.getElementById('new-jug-lat').value;
   state.jugadores = state.jugadores || [];
@@ -652,7 +646,7 @@ function editarJugador(jId){
       <div class="grid-2">
         <div>
           <div class="field"><label>Nombre</label><input id="edit-nombre" value="${escapeHtml(j.nombre)}"></div>
-          <div class="field"><label>Categoría</label><select id="edit-cat">
+          <div class="field"><label>Categoria</label><select id="edit-cat">
             ${CATEGORIAS.map(c=>`<option value="${c}" ${c===j.categoria?'selected':''}>${CATEGORIA_LABEL[c]}</option>`).join('')}
           </select></div>
           <div class="field"><label>Lateralidad</label><select id="edit-lat">
@@ -699,16 +693,14 @@ function editarJugador(jId){
   };
 }
 
-// ---- SECCIÓN CONFIGURACIÓN ----
+// ---- SECCION CONFIGURACION ----
 function renderConfiguracionSection(){
   const el = document.getElementById('section-configuracion');
   
-  // Inicializar configuración si no existe
   if(!state.configuracion) {
     state.configuracion = { puntos_por_posicion: { ...POINTS_BY_POSITION } };
   }
   
-  // Calcular puntos totales por jugador
   const jugadoresConPuntos = (state.jugadores || []).map(j => {
     const puntosTotales = (j.historial || []).reduce((sum, h) => sum + (h.puntos_ganados || 0), 0);
     return { ...j, puntosTotales };
@@ -716,9 +708,9 @@ function renderConfiguracionSection(){
   
   el.innerHTML = `
     <div class="panel">
-      <h2>Configuración Global de Puntos</h2>
+      <h2>Configuracion Global de Puntos</h2>
       <p style="color:var(--grey);margin-bottom:20px;">
-        Configura cuántos puntos recibe cada jugador según su posición final en el torneo.
+        Configura cuantos puntos recibe cada jugador segun su posicion final en el torneo.
       </p>
       <div class="puntos-config" id="puntos-config">
         ${Object.entries(POINTS_BY_POSITION).map(([pos, valor]) => `
@@ -728,7 +720,7 @@ function renderConfiguracionSection(){
           </div>
         `).join('')}
       </div>
-      <button class="btn btn-primary" id="btn-guardar-config" style="margin-top:20px;">Guardar Configuración Global</button>
+      <button class="btn btn-primary" id="btn-guardar-config" style="margin-top:20px;">Guardar Configuracion Global</button>
     </div>
     
     <div class="panel">
@@ -738,14 +730,14 @@ function renderConfiguracionSection(){
       </p>
       
       ${jugadoresConPuntos.length === 0 ? '
-        <div class="empty-state">No hay jugadores aún.</div>
+        <div class="empty-state">No hay jugadores aun.</div>
       ' : `
         <div style="overflow-x:auto;">
           <table class="jugadores-config-table">
             <thead>
               <tr>
                 <th>Jugador</th>
-                <th>Categoría</th>
+                <th>Categoria</th>
                 <th>Puntos Actuales</th>
                 <th>Ajustar Puntos</th>
                 <th>Acciones</th>
@@ -764,7 +756,7 @@ function renderConfiguracionSection(){
                     <input type="number" class="puntos-input" data-jugador="${j.id}" value="0" min="0" placeholder="+-">
                   </td>
                   <td class="actions-cell">
-                    <button class="btn btn-primary btn-sm btn-add-puntos" data-jugador="${j.id}">+ Añadir</button>
+                    <button class="btn btn-primary btn-sm btn-add-puntos" data-jugador="${j.id}">+ Anadir</button>
                     <button class="btn btn-danger btn-sm btn-remove-puntos" data-jugador="${j.id}">- Quitar</button>
                   </td>
                 </tr>
@@ -779,15 +771,14 @@ function renderConfiguracionSection(){
     </div>
     
     <div class="panel">
-      <h2>Configuración por Torneo</h2>
+      <h2>Configuracion por Torneo</h2>
       <p style="color:var(--grey);margin-bottom:20px;">
-        Cada torneo puede tener su propia configuración de puntos.
+        Cada torneo puede tener su propia configuracion de puntos.
       </p>
       <div id="torneos-config-list"></div>
     </div>
   `;
   
-  // Cargar valores actuales en configuración global
   Object.entries(POINTS_BY_POSITION).forEach(([pos]) => {
     const input = document.getElementById(`puntos-${pos}`);
     if(input) {
@@ -795,7 +786,6 @@ function renderConfiguracionSection(){
     }
   });
   
-  // Guardar configuración global
   document.getElementById('btn-guardar-config').onclick = () => {
     Object.entries(POINTS_BY_POSITION).forEach(([pos]) => {
       const input = document.getElementById(`puntos-${pos}`);
@@ -804,10 +794,9 @@ function renderConfiguracionSection(){
       }
     });
     persist();
-    toast('Configuración global guardada ✓');
+    toast('Configuracion global guardada OK');
   };
   
-  // Funcionalidad para ajustar puntos manualmente
   let puntosAjustes = {};
   
   document.querySelectorAll('.puntos-input').forEach(input => {
@@ -865,10 +854,9 @@ function renderConfiguracionSection(){
     puntosAjustes = {};
     persist();
     render();
-    toast('Puntos actualizados ✓');
+    toast('Puntos actualizados OK');
   };
   
-  // Lista de torneos para configuración individual
   const torneosList = document.getElementById('torneos-config-list');
   if(torneosList) {
     torneosList.innerHTML = state.torneos.map(torneo => {
@@ -892,7 +880,6 @@ function renderConfiguracionSection(){
       `;
     }).join('');
     
-    // Eventos para guardar configuración por torneo
     document.querySelectorAll('[data-torneo]').forEach(btn => {
       btn.onclick = () => {
         const torneoId = btn.dataset.torneo;
@@ -903,14 +890,12 @@ function renderConfiguracionSection(){
           torneo.puntos_por_posicion = {};
         }
         
-        // Guardar configuración para todas las categorías del torneo
         torneo.categorias.forEach(cat => {
           if(!torneo.puntos_por_posicion[cat]) {
             torneo.puntos_por_posicion[cat] = { ...POINTS_BY_POSITION };
           }
         });
         
-        // Actualizar valores
         Object.entries(POINTS_BY_POSITION).forEach(([pos]) => {
           const input = document.querySelector(`[data-torneo="${torneoId}"][data-pos="${pos}"]`);
           if(input) {
@@ -924,7 +909,7 @@ function renderConfiguracionSection(){
         });
         
         persist();
-        toast('Configuración del torneo guardada ✓');
+        toast('Configuracion del torneo guardada OK');
       };
     });
   }
@@ -956,7 +941,6 @@ async function pollUpdatesAdmin(){
     state = await loadState(supabase);
     if(!state.jugadores) state.jugadores = [];
     if(!state.configuracion) state.configuracion = { puntos_por_posicion: { ...POINTS_BY_POSITION } };
-    // Asegurar que todos los torneos tengan configuración de puntos
     state.torneos.forEach(torneo => {
       if(!torneo.puntos_por_posicion) {
         torneo.puntos_por_posicion = { ...POINTS_BY_POSITION };
