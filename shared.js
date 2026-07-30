@@ -10,7 +10,7 @@ export const CATEGORIA_LABEL = { '3ra':'3ª','4ta':'4ª','5ta':'5ª','6ta':'6ª'
 // ============================================================
 // Configuración de puntuación (editable aquí)
 // ============================================================
-export const POINTS_PER_WIN = 14;  // Puntos por ganar un partido
+export const POINTS_PER_WIN = 0;  // Puntos por ganar un partido
 
 // Configuración de puntos por posición en torneo
 export const POINTS_BY_POSITION = {
