@@ -137,6 +137,16 @@
   .puntos-config-item{display:flex;align-items:center;gap:10px;}
   .puntos-config-item label{margin-bottom:0;flex:1;}
   .puntos-config-item input{width:80px;text-align:center;}
+  
+  /* Estilos para edición de jugadores en configuración */
+  .jugadores-config-table{width:100%;border-collapse:collapse;}
+  .jugadores-config-table th{text-align:left;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--grey);padding:10px 12px;border-bottom:1px solid var(--line);}
+  .jugadores-config-table td{padding:10px 12px;border-bottom:1px solid var(--line);font-size:0.85rem;}
+  .jugadores-config-table tr:last-child td{border-bottom:none;}
+  .jugadores-config-table tr:hover td{background:var(--card-2);}
+  .puntos-input{width:70px;text-align:center;padding:6px 8px;font-size:0.8rem;}
+  .categoria-badge{font-size:0.7rem;font-weight:700;padding:4px 8px;border-radius:6px;background:var(--lime-dim);color:var(--lime);}
+  .actions-cell{display:flex;gap:6px;}
 </style>
 </head>
 <body>
@@ -698,6 +708,12 @@ function renderConfiguracionSection(){
     state.configuracion = { puntos_por_posicion: { ...POINTS_BY_POSITION } };
   }
   
+  // Calcular puntos totales por jugador
+  const jugadoresConPuntos = (state.jugadores || []).map(j => {
+    const puntosTotales = (j.historial || []).reduce((sum, h) => sum + (h.puntos_ganados || 0), 0);
+    return { ...j, puntosTotales };
+  });
+  
   el.innerHTML = `
     <div class="panel">
       <h2>Configuración Global de Puntos</h2>
@@ -712,7 +728,54 @@ function renderConfiguracionSection(){
           </div>
         `).join('')}
       </div>
-      <button class="btn btn-primary" id="btn-guardar-config" style="margin-top:20px;">Guardar Configuración</button>
+      <button class="btn btn-primary" id="btn-guardar-config" style="margin-top:20px;">Guardar Configuración Global</button>
+    </div>
+    
+    <div class="panel">
+      <h2>Editar Puntos de Jugadores</h2>
+      <p style="color:var(--grey);margin-bottom:20px;">
+        Edita manualmente los puntos de cada jugador. Los cambios se aplican directamente al historial.
+      </p>
+      
+      ${jugadoresConPuntos.length === 0 ? '
+        <div class="empty-state">No hay jugadores aún.</div>
+      ' : `
+        <div style="overflow-x:auto;">
+          <table class="jugadores-config-table">
+            <thead>
+              <tr>
+                <th>Jugador</th>
+                <th>Categoría</th>
+                <th>Puntos Actuales</th>
+                <th>Ajustar Puntos</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${jugadoresConPuntos.map(j => `
+                <tr>
+                  <td>
+                    <div style="font-weight:700;">${escapeHtml(j.nombre)}</div>
+                    <div style="font-size:0.75rem;color:var(--grey);">${LATERALIDADES[j.lateralidad] || ''}</div>
+                  </td>
+                  <td><span class="categoria-badge">${CATEGORIA_LABEL[j.categoria] || j.categoria}</span></td>
+                  <td><strong>${j.puntosTotales}</strong></td>
+                  <td>
+                    <input type="number" class="puntos-input" data-jugador="${j.id}" value="0" min="0" placeholder="+-">
+                  </td>
+                  <td class="actions-cell">
+                    <button class="btn btn-primary btn-sm btn-add-puntos" data-jugador="${j.id}">+ Añadir</button>
+                    <button class="btn btn-danger btn-sm btn-remove-puntos" data-jugador="${j.id}">- Quitar</button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+        <button class="btn btn-outline btn-block" id="btn-guardar-todos-puntos" style="margin-top:20px;">
+          Guardar Todos los Cambios
+        </button>
+      `}
     </div>
     
     <div class="panel">
@@ -724,7 +787,7 @@ function renderConfiguracionSection(){
     </div>
   `;
   
-  // Cargar valores actuales
+  // Cargar valores actuales en configuración global
   Object.entries(POINTS_BY_POSITION).forEach(([pos]) => {
     const input = document.getElementById(`puntos-${pos}`);
     if(input) {
@@ -741,7 +804,68 @@ function renderConfiguracionSection(){
       }
     });
     persist();
-    toast('Configuración guardada ✓');
+    toast('Configuración global guardada ✓');
+  };
+  
+  // Funcionalidad para ajustar puntos manualmente
+  let puntosAjustes = {};
+  
+  document.querySelectorAll('.puntos-input').forEach(input => {
+    input.addEventListener('change', (e) => {
+      const jugadorId = e.target.dataset.jugador;
+      const valor = parseInt(e.target.value) || 0;
+      puntosAjustes[jugadorId] = valor;
+    });
+  });
+  
+  document.querySelectorAll('.btn-add-puntos').forEach(btn => {
+    btn.onclick = () => {
+      const jugadorId = btn.dataset.jugador;
+      const input = document.querySelector(`.puntos-input[data-jugador="${jugadorId}"]`);
+      if(input) {
+        const valor = parseInt(input.value) || 0;
+        puntosAjustes[jugadorId] = (puntosAjustes[jugadorId] || 0) + valor;
+        input.value = '';
+        toast(`+${valor} puntos para este jugador`);
+      }
+    };
+  });
+  
+  document.querySelectorAll('.btn-remove-puntos').forEach(btn => {
+    btn.onclick = () => {
+      const jugadorId = btn.dataset.jugador;
+      const input = document.querySelector(`.puntos-input[data-jugador="${jugadorId}"]`);
+      if(input) {
+        const valor = parseInt(input.value) || 0;
+        puntosAjustes[jugadorId] = (puntosAjustes[jugadorId] || 0) - valor;
+        input.value = '';
+        toast(`-${valor} puntos para este jugador`);
+      }
+    };
+  });
+  
+  document.getElementById('btn-guardar-todos-puntos').onclick = () => {
+    Object.entries(puntosAjustes).forEach(([jugadorId, ajuste]) => {
+      if(ajuste !== 0) {
+        const jugador = state.jugadores.find(j => j.id === jugadorId);
+        if(jugador) {
+          jugador.historial = jugador.historial || [];
+          jugador.historial.push({
+            torneoId: 'manual',
+            categoria: jugador.categoria,
+            parejaId: null,
+            puntos_ganados: ajuste,
+            posicion: 'manual',
+            fecha: new Date().toISOString(),
+            nota: 'Ajuste manual de puntos'
+          });
+        }
+      }
+    });
+    puntosAjustes = {};
+    persist();
+    render();
+    toast('Puntos actualizados ✓');
   };
   
   // Lista de torneos para configuración individual
