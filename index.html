@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pádel Miramar — Apertura 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B0B0B; --card:#161616; --card-2:#1D1D1D; --line:#2A2A2A;
+    --lime:#D2F23A; --lime-dim:rgba(210,242,58,0.15);
+    --white:#F5F5F5; --grey:#9B9B9B;
+    --font-display:'Montserrat', sans-serif; --font-body:'Inter', sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--white);font-family:var(--font-body);line-height:1.5;}
+  a{color:inherit;text-decoration:none;}
+  select{
+    background:var(--card-2);border:1px solid var(--line);border-radius:8px;color:var(--white);
+    padding:10px 12px;font-size:0.88rem;outline:none;
+  }
+  select:focus{border-color:var(--lime);}
+
+  nav{
+    display:flex;align-items:center;justify-content:space-between;padding:20px 4vw;
+    border-bottom:1px solid var(--line);flex-wrap:wrap;gap:14px;
+  }
+  .brand{display:flex;align-items:center;gap:14px;}
+  .brand-icon{width:44px;height:44px;border-radius:12px;background:var(--lime);display:flex;align-items:center;justify-content:center;}
+  .brand-name{font-family:var(--font-display);font-weight:900;font-size:1.15rem;letter-spacing:0.01em;line-height:1;}
+  .brand-name span{display:block;color:var(--lime);font-size:0.95rem;font-weight:800;}
+  .navlinks{display:none;gap:34px;font-weight:600;font-size:0.88rem;color:var(--grey);}
+  .navlinks a:hover{color:var(--white);}
+  @media(min-width:920px){.navlinks{display:flex;}}
+
+  .hero{
+    display:grid;grid-template-columns:1fr;gap:36px;padding:60px 4vw 50px;max-width:1400px;margin:0 auto;align-items:center;
+  }
+  @media(min-width:960px){.hero{grid-template-columns:1fr 1fr;padding:80px 4vw 60px;}}
+  .hero-title{font-family:var(--font-display);font-weight:900;font-size:clamp(2.4rem,6vw,3.6rem);line-height:1.02;}
+  .hero-title .lime{color:var(--lime);display:block;}
+  .hero-meta{display:flex;gap:28px;margin-top:26px;flex-wrap:wrap;color:var(--grey);font-size:0.95rem;}
+  .hero-meta div{display:flex;align-items:center;gap:9px;}
+  .hero-cta{display:flex;gap:14px;margin-top:34px;flex-wrap:wrap;}
+  .btn{
+    font-weight:700;font-size:0.88rem;padding:14px 24px;border-radius:10px;border:none;cursor:pointer;
+    display:inline-flex;align-items:center;gap:9px;transition:transform .2s, box-shadow .2s;
+  }
+  .btn:hover{transform:translateY(-2px);}
+  .btn-primary{background:var(--lime);color:#0B0B0B;}
+  .btn-primary:hover{box-shadow:0 8px 22px rgba(210,242,58,0.25);}
+  .hero-art{position:relative;border-radius:24px;overflow:hidden;background:linear-gradient(135deg,#132038,#0B0B0B 70%);aspect-ratio:16/11;border:1px solid var(--line);}
+  .hero-art svg{width:100%;height:100%;}
+  .hero-stats{display:flex;gap:40px;margin-top:44px;flex-wrap:wrap;}
+  .stat-num{font-family:var(--font-display);font-size:1.8rem;color:var(--lime);font-weight:800;}
+  .stat-label{font-size:0.72rem;color:var(--grey);text-transform:uppercase;letter-spacing:0.06em;}
+
+  section{padding:50px 4vw;max-width:1400px;margin:0 auto;}
+  .sec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:16px;}
+  .sec-title{display:flex;align-items:center;gap:12px;font-family:var(--font-display);font-weight:800;font-size:1.4rem;}
+  .sec-icon{width:22px;height:22px;color:var(--lime);flex-shrink:0;}
+  .sec-note{color:var(--grey);font-size:0.88rem;max-width:38ch;}
+
+  .ranking-table{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;}
+  table{width:100%;border-collapse:collapse;font-size:0.92rem;}
+  thead th{
+    font-family:'Montserrat',sans-serif;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;
+    color:var(--grey);text-align:left;padding:16px 18px;border-bottom:1px solid var(--line);
+  }
+  tbody td{padding:15px 18px;border-bottom:1px solid var(--line);}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr{cursor:pointer;transition:background .15s;}
+  tbody tr:hover{background:rgba(210,242,58,0.04);}
+  .pos-num{font-family:'Montserrat',sans-serif;color:var(--grey);}
+  .pos-num.top{color:var(--lime);font-weight:700;}
+  td.numeric{font-family:'Montserrat',sans-serif;text-align:center;}
+  .player-name{font-weight:600;}
+  .player-foto{width:32px;height:32px;border-radius:6px;background:var(--card-2);border:1px solid var(--line);display:inline-flex;align-items:center;justify-content:center;margin-right:8px;overflow:hidden;}
+  .player-foto img{width:100%;height:100%;object-fit:cover;}
+
+  .modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center;}
+  .modal.show{display:flex;}
+  .modal-content{
+    background:var(--card);border:1px solid var(--line);border-radius:18px;max-width:500px;width:90%;max-height:80vh;overflow-y:auto;
+    padding:30px;position:relative;
+  }
+  .modal-close{
+    position:absolute;top:16px;right:16px;width:30px;height:30px;border-radius:6px;background:var(--card-2);
+    border:1px solid var(--line);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--grey);
+  }
+  .modal-close:hover{color:var(--lime);border-color:var(--lime);}
+  .modal-foto{
+    width:100%;height:200px;border-radius:12px;overflow:hidden;background:var(--card-2);
+    border:1px solid var(--line);margin-bottom:20px;display:flex;align-items:center;justify-content:center;
+  }
+  .modal-foto img{width:100%;height:100%;object-fit:cover;}
+  .modal-foto.empty{color:var(--grey);font-size:3rem;}
+  .modal-info{margin-bottom:20px;}
+  .modal-info-row{display:flex;justify-content:space-between;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--line);}
+  .modal-info-label{font-size:0.72rem;color:var(--grey);text-transform:uppercase;letter-spacing:0.05em;}
+  .modal-info-value{font-weight:600;}
+  .modal-historial{margin-top:20px;}
+  .modal-historial h3{font-size:0.95rem;margin-bottom:12px;}
+  .historial-item{background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:8px;font-size:0.85rem;}
+  .historial-item-row{display:flex;justify-content:space-between;margin-bottom:4px;}
+
+  .empty-note{color:var(--grey);font-size:0.9rem;padding:26px;background:var(--card);border:1px dashed var(--line);border-radius:14px;text-align:center;}
+
+  footer{padding:28px 4vw 44px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;border-top:1px solid var(--line);color:var(--grey);font-size:0.82rem;}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="brand">
+    <div class="brand-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="9" r="6" stroke="#0B0B0B" stroke-width="1.6"/><path d="M12 15v6" stroke="#0B0B0B" stroke-width="1.6"/></svg></div>
+    <div class="brand-name">PÁDEL<span>MIRAMAR</span></div>
+  </div>
+  <div class="navlinks">
+    <a href="#">INICIO</a>
+    <a href="#torneos">TORNEOS</a>
+    <a href="#ranking">RANKING</a>
+    <a href="#contacto">CONTACTO</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div>
+    <h1 class="hero-title">PÁDEL MIRAMAR<span class="lime">APERTURA 2026</span></h1>
+    <div class="hero-meta">
+      <div><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/></svg>Todo el circuito 2026</div>
+    </div>
+    <div class="hero-cta">
+      <a href="#ranking" class="btn btn-primary">Ver ranking</a>
+    </div>
+    <div class="hero-stats" id="hero-stats"></div>
+  </div>
+  <div class="hero-art">
+    <svg viewBox="0 0 600 420" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="150" cy="290" r="34" fill="#D2F23A"/>
+    </svg>
+  </div>
+</div>
+
+<section id="ranking">
+  <div class="sec-head">
+    <div class="sec-title">
+      <svg class="sec-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 21h8M12 17v4M6 4h12v3a6 6 0 01-12 0V4z"/></svg>
+      RANKING DE JUGADORES
+    </div>
+    <select id="select-categoria" style="max-width:200px;"></select>
+  </div>
+  <div id="ranking-content"></div>
+</section>
+
+<div id="modal-jugador" class="modal">
+  <div class="modal-content">
+    <div class="modal-close">✕</div>
+    <div class="modal-foto empty" id="modal-foto">📷</div>
+    <div class="modal-info" id="modal-info"></div>
+    <div class="modal-historial" id="modal-historial"></div>
+  </div>
+</div>
+
+<footer id="contacto">
+  <div>© 2026 Pádel Miramar.</div>
+  <a href="admin.html" style="opacity:0.5;font-size:0.75rem;">Admin</a>
+</footer>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import {
+  SUPABASE_URL, SUPABASE_ANON_KEY, CATEGORIAS, CATEGORIA_LABEL, LATERALIDADES,
+  loadState, saveState, calcularRankingPorCategoria
+} from './shared.js';
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let state = null;
+
+function renderHeroStats(){
+  const totalJugadores = (state.jugadores || []).length;
+  const totalTorneos = state.torneos.length;
+  document.getElementById('hero-stats').innerHTML = `
+    <div><div class="stat-num">${totalJugadores}</div><div class="stat-label">Jugadores</div></div>
+    <div><div class="stat-num">${totalTorneos}</div><div class="stat-label">Torneos</div></div>
+  `;
+}
+
+function populateCategories(){
+  const select = document.getElementById('select-categoria');
+  const cats = [...new Set((state.jugadores || []).map(j=>j.categoria))].sort();
+  select.innerHTML = cats.map(c=>`<option value="${c}">${CATEGORIA_LABEL[c]}</option>`).join('');
+  select.onchange = renderRanking;
+  if(cats.length) renderRanking();
+}
+
+function renderRanking(){
+  const cat = document.getElementById('select-categoria').value;
+  const el = document.getElementById('ranking-content');
+  const ranking = calcularRankingPorCategoria(state.jugadores || [], cat);
+  
+  if(ranking.length===0){
+    el.innerHTML = '<div class="empty-note">Sin jugadores en esta categoría.</div>';
+    return;
+  }
+
+  el.innerHTML = `<div class="ranking-table"><table>
+    <thead><tr><th>#</th><th>Jugador</th><th>Puntos</th></tr></thead>
+    <tbody id="ranking-body"></tbody>
+  </table></div>`;
+
+  const tbody = document.getElementById('ranking-body');
+  ranking.forEach((j,i)=>{
+    const tr = document.createElement('tr');
+    tr.onclick = ()=>mostrarPerfilJugador(j.id);
+    tr.innerHTML = `
+      <td class="pos-num ${i<3?'top':''}">${j.puesto}</td>
+      <td class="player-name">${escapeHtml(j.nombre)}</td>
+      <td class="numeric">${j.puntos}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function mostrarPerfilJugador(jId){
+  const j = (state.jugadores || []).find(x=>x.id===jId);
+  if(!j) return;
+
+  const fotoEl = document.getElementById('modal-foto');
+  if(j.foto){
+    fotoEl.classList.remove('empty');
+    fotoEl.innerHTML = `<img src="${j.foto}" alt="">`;
+  } else {
+    fotoEl.classList.add('empty');
+    fotoEl.innerHTML = '📷';
+  }
+
+  const puntos = (j.historial || []).reduce((sum,h)=>sum+(h.puntos_ganados||0), 0);
+  document.getElementById('modal-info').innerHTML = `
+    <div class="modal-info-row">
+      <span class="modal-info-label">Nombre</span>
+      <span class="modal-info-value">${escapeHtml(j.nombre)}</span>
+    </div>
+    <div class="modal-info-row">
+      <span class="modal-info-label">Categoría</span>
+      <span class="modal-info-value">${CATEGORIA_LABEL[j.categoria]}</span>
+    </div>
+    <div class="modal-info-row">
+      <span class="modal-info-label">Lateralidad</span>
+      <span class="modal-info-value">${LATERALIDADES[j.lateralidad] || j.lateralidad}</span>
+    </div>
+    <div class="modal-info-row">
+      <span class="modal-info-label">Puntos totales</span>
+      <span class="modal-info-value">${puntos}</span>
+    </div>
+  `;
+
+  const historialHTML = (j.historial || []).length===0 ? '<div class="empty-note" style="margin:0;">Sin historial.</div>' :
+    (j.historial || []).map(h=>{
+      const torneo = state.torneos.find(t=>t.id===h.torneoId);
+      return `<div class="historial-item">
+        <div class="historial-item-row">
+          <span>${escapeHtml(torneo?.nombre || 'Torneo')}</span>
+          <span style="color:var(--lime);font-weight:700;">+${h.puntos_ganados} pts</span>
+        </div>
+        <div class="historial-item-row" style="font-size:0.78rem;color:var(--grey);">
+          <span>${CATEGORIA_LABEL[h.categoria]}</span>
+        </div>
+      </div>`;
+    }).join('');
+
+  document.getElementById('modal-historial').innerHTML = `<h3>Historial de partidos</h3>${historialHTML}`;
+
+  document.getElementById('modal-jugador').classList.add('show');
+}
+
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+document.querySelector('.modal-close').onclick = ()=>{
+  document.getElementById('modal-jugador').classList.remove('show');
+};
+
+document.getElementById('modal-jugador').onclick = (e)=>{
+  if(e.target.id==='modal-jugador') document.getElementById('modal-jugador').classList.remove('show');
+};
+
+async function pollUpdates(){
+  try{
+    const newState = await loadState(supabase);
+    if(JSON.stringify(state) !== JSON.stringify(newState)){
+      state = newState;
+      renderHeroStats();
+      populateCategories();
+    }
+  }catch(e){
+    console.error('Error en polling:', e);
+  }
+}
+
+(async function init(){
+  try{
+    state = await loadState(supabase);
+    if(!state.jugadores) state.jugadores = [];
+    renderHeroStats();
+    populateCategories();
+    setInterval(pollUpdates, 3000);
+  }catch(e){
+    console.error(e);
+    document.getElementById('ranking-content').innerHTML = '<div class="empty-note">No se pudo conectar.</div>';
+  }
+})();
+</script>
+
+</body>
+</html>

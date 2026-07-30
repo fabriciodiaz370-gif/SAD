@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Pádel Miramar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B0B0B; --card:#161616; --card-2:#1D1D1D; --line:#2A2A2A;
+    --lime:#D2F23A; --lime-dim:rgba(210,242,58,0.15);
+    --white:#F5F5F5; --grey:#9B9B9B; --red:#E5484D; --red-dim:rgba(229,72,77,0.15);
+    --font-display:'Montserrat',sans-serif; --font-body:'Inter',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--white);font-family:var(--font-body);line-height:1.5;}
+  a{color:inherit;text-decoration:none;}
+  button, select, input{font-family:var(--font-body);}
+  input, select{
+    background:var(--bg);border:1px solid var(--line);border-radius:8px;color:var(--white);
+    padding:10px 12px;font-size:0.9rem;outline:none;width:100%;
+  }
+  input:focus, select:focus{border-color:var(--lime);}
+  label{font-size:0.72rem;color:var(--grey);text-transform:uppercase;letter-spacing:0.05em;font-weight:600;display:block;margin-bottom:6px;}
+
+  nav{
+    display:flex;align-items:center;justify-content:space-between;padding:18px 4vw;
+    border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:10;
+  }
+  .brand{display:flex;align-items:center;gap:12px;font-family:var(--font-display);font-weight:900;font-size:1.05rem;}
+  .brand .dot{width:10px;height:10px;border-radius:50%;background:var(--lime);}
+  .navlink{font-weight:700;font-size:0.82rem;color:var(--grey);border:1px solid var(--line);padding:9px 16px;border-radius:8px;}
+  .navlink:hover{color:var(--white);border-color:var(--lime);}
+
+  .section-tabs{display:flex;gap:8px;padding:20px 4vw;border-bottom:1px solid var(--line);flex-wrap:wrap;}
+  .section-tab{
+    font-weight:700;font-size:0.85rem;padding:10px 18px;border-radius:8px;background:var(--card-2);border:1px solid var(--line);
+    color:var(--grey);cursor:pointer;
+  }
+  .section-tab.active{background:var(--lime);color:#0B0B0B;border-color:var(--lime);}
+
+  .layout{display:grid;grid-template-columns:1fr;gap:0;max-width:1400px;margin:0 auto;}
+  @media(min-width:900px){.layout{grid-template-columns:280px 1fr;}}
+
+  .sidebar{padding:26px 20px;border-right:1px solid var(--line);display:none;}
+  .sidebar.show{display:block;}
+  .sidebar h3{font-family:var(--font-display);font-size:0.85rem;letter-spacing:0.06em;color:var(--grey);margin-bottom:16px;}
+  .torneo-item{
+    padding:13px 14px;border-radius:10px;border:1px solid var(--line);margin-bottom:8px;cursor:pointer;
+    font-size:0.88rem;font-weight:600;transition:all .15s;
+  }
+  .torneo-item:hover{border-color:var(--lime);}
+  .torneo-item.active{background:var(--lime-dim);border-color:var(--lime);color:var(--lime);}
+  .torneo-item small{display:block;color:var(--grey);font-weight:500;font-size:0.74rem;margin-top:2px;}
+  .torneo-item.active small{color:var(--lime);opacity:0.75;}
+
+  .btn{
+    font-weight:700;font-size:0.85rem;padding:12px 18px;border-radius:9px;border:none;cursor:pointer;
+    display:inline-flex;align-items:center;gap:8px;transition:transform .15s;
+  }
+  .btn:hover{transform:translateY(-1px);}
+  .btn-primary{background:var(--lime);color:#0B0B0B;}
+  .btn-outline{background:transparent;color:var(--white);border:1.5px solid var(--line);}
+  .btn-outline:hover{border-color:var(--lime);}
+  .btn-danger{background:var(--red-dim);color:var(--red);}
+  .btn-block{width:100%;justify-content:center;}
+  .btn-sm{padding:8px 12px;font-size:0.78rem;}
+
+  .main{padding:26px 4vw 60px;}
+  .section{display:none;}
+  .section.active{display:block;}
+  
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:26px;margin-bottom:22px;}
+  .panel h2{font-family:var(--font-display);font-weight:800;font-size:1.15rem;margin-bottom:18px;display:flex;align-items:center;gap:10px;justify-content:space-between;flex-wrap:wrap;}
+  .grid-2{display:grid;grid-template-columns:1fr;gap:14px;}
+  @media(min-width:640px){.grid-2{grid-template-columns:1fr 1fr;}}
+  .grid-3{display:grid;grid-template-columns:1fr;gap:14px;}
+  @media(min-width:760px){.grid-3{grid-template-columns:1fr 1fr 1fr;}}
+  .field{margin-bottom:0;}
+
+  .check-pill{
+    padding:9px 16px;border-radius:8px;border:1px solid var(--line);font-size:0.82rem;font-weight:700;cursor:pointer;color:var(--grey);
+  }
+  .check-pill.active{background:var(--lime);color:#0B0B0B;border-color:var(--lime);}
+
+  .tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;}
+  .tab{padding:9px 18px;border-radius:8px;background:var(--card-2);border:1px solid var(--line);color:var(--grey);font-weight:700;font-size:0.82rem;cursor:pointer;}
+  .tab.active{background:var(--lime);color:#0B0B0B;border-color:var(--lime);}
+
+  .pareja-row, .jugador-row{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:11px 14px;background:var(--card-2);border:1px solid var(--line);border-radius:10px;margin-bottom:8px;
+  }
+  .pareja-row .nombre, .jugador-row .nombre{font-size:0.88rem;font-weight:600;}
+  .pareja-row .x, .jugador-row .x{cursor:pointer;color:var(--grey);width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .pareja-row .x:hover, .jugador-row .x:hover{color:var(--red);background:var(--red-dim);}
+  
+  .foto-preview{width:60px;height:60px;border-radius:8px;background:var(--bg);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;}
+  .foto-preview img{width:100%;height:100%;object-fit:cover;}
+  .foto-preview.empty{color:var(--grey);font-size:0.7rem;}
+
+  .add-pareja-form, .add-jugador-form{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;}
+  .add-pareja-form input, .add-jugador-form input, .add-jugador-form select{flex:1;min-width:140px;}
+
+  .empty-state{color:var(--grey);font-size:0.88rem;text-align:center;padding:30px 10px;}
+
+  .bracket-wrap{overflow-x:auto;padding-top:6px;}
+  .bracket{display:flex;gap:36px;min-width:700px;}
+  .round{display:flex;flex-direction:column;justify-content:space-around;gap:14px;flex:1;min-width:190px;}
+  .round-label{text-align:center;font-size:0.68rem;font-weight:700;color:var(--grey);letter-spacing:0.08em;margin-bottom:4px;}
+  .match{background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:10px;font-size:0.8rem;}
+  .match .side{display:flex;align-items:center;justify-content:space-between;padding:6px 4px;gap:6px;}
+  .match .side.winner{color:var(--lime);font-weight:700;}
+  .match .side.bye{color:var(--grey);font-style:italic;}
+  .match .side.tbd{color:var(--grey);}
+  .win-btn{
+    font-size:0.68rem;font-weight:700;padding:5px 9px;border-radius:6px;border:1px solid var(--line);
+    background:transparent;color:var(--grey);cursor:pointer;flex-shrink:0;
+  }
+  .win-btn:hover{border-color:var(--lime);color:var(--lime);}
+  .decided-tag{font-size:0.68rem;color:var(--lime);}
+
+  .toast{
+    position:fixed;bottom:20px;right:20px;background:var(--card-2);border:1px solid var(--lime);color:var(--lime);
+    padding:12px 18px;border-radius:10px;font-size:0.85rem;font-weight:600;opacity:0;transform:translateY(10px);
+    transition:all .25s;pointer-events:none;z-index:100;
+  }
+  .toast.show{opacity:1;transform:translateY(0);}
+  .loading{padding:60px;text-align:center;color:var(--grey);}
+
+  .file-input{display:none;}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="brand"><span class="dot"></span>PÁDEL MIRAMAR · ADMIN</div>
+  <a class="navlink" href="index.html">Ver sitio público →</a>
+</nav>
+
+<div class="section-tabs">
+  <button class="section-tab active" data-section="torneos">Torneos & Llave</button>
+  <button class="section-tab" data-section="jugadores">Jugadores</button>
+</div>
+
+<div id="app" class="loading">Cargando datos…</div>
+<div class="toast" id="toast">Guardado ✓</div>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import {
+  SUPABASE_URL, SUPABASE_ANON_KEY, CATEGORIAS, CATEGORIA_LABEL, LATERALIDADES,
+  uid, generateBracket, propagateWinner, roundLabel, loadState, saveState, isAprobada, POINTS_PER_WIN, sumarPuntosAlGanador
+} from './shared.js';
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const app = document.getElementById('app');
+const toastEl = document.getElementById('toast');
+
+let state = null;
+let activeTorneoId = null;
+let activeTab = {};
+let currentSection = 'torneos';
+let lastStateJson = '';
+
+function toast(msg){
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  setTimeout(()=>toastEl.classList.remove('show'), 1800);
+}
+
+async function persist(){
+  try{
+    await saveState(supabase, state);
+    toast('Guardado ✓');
+  }catch(e){
+    console.error(e);
+    toast('Error al guardar');
+  }
+}
+
+function activeTorneo(){
+  return state.torneos.find(t=>t.id===activeTorneoId) || null;
+}
+
+// ---- RENDER GENERAL ----
+function render(){
+  const html = `
+    <div class="layout">
+      ${currentSection==='torneos' ? `<div class="sidebar show">
+        <h3>TORNEOS</h3>
+        <div id="torneo-list"></div>
+        <button class="btn btn-outline btn-block" id="btn-nuevo-torneo" style="margin-top:10px;">+ Nuevo torneo</button>
+      </div>` : '<div></div>'}
+      <div class="main">
+        <div id="section-torneos" class="section ${currentSection==='torneos'?'active':''}"></div>
+        <div id="section-jugadores" class="section ${currentSection==='jugadores'?'active':''}"></div>
+      </div>
+    </div>
+  `;
+  app.innerHTML = html;
+
+  // Botones de sección
+  document.querySelectorAll('.section-tab').forEach(btn=>{
+    btn.onclick = ()=>{
+      document.querySelectorAll('.section-tab').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      currentSection = btn.dataset.section;
+      render();
+    };
+  });
+
+  if(currentSection==='torneos'){
+    renderTorneosSection();
+  } else {
+    renderJugadoresSection();
+  }
+}
+
+// ---- SECCIÓN TORNEOS ----
+function renderTorneosSection(){
+  const t = activeTorneo();
+  const el = document.getElementById('section-torneos');
+  
+  // Lista de torneos
+  const list = document.getElementById('torneo-list');
+  if(list){
+    list.innerHTML = '';
+    state.torneos.forEach(tr=>{
+      const div = document.createElement('div');
+      div.className = 'torneo-item' + (tr.id===activeTorneoId ? ' active' : '');
+      const totalParejas = Object.values(tr.parejas).reduce((a,arr)=>a+arr.length,0);
+      div.innerHTML = `${tr.nombre}<small>${tr.fecha} · ${totalParejas} parejas</small>`;
+      div.onclick = ()=>{ activeTorneoId = tr.id; render(); };
+      list.appendChild(div);
+    });
+    document.getElementById('btn-nuevo-torneo').onclick = crearTorneo;
+  }
+
+  if(!t){
+    el.innerHTML = '<div class="panel"><div class="empty-state">Elegí un torneo o creá uno nuevo.</div></div>';
+    return;
+  }
+
+  el.innerHTML = renderTorneoPanel(t);
+  wireTorneoPanel(t);
+}
+
+function renderTorneoPanel(t){
+  return `
+    <div class="panel">
+      <h2>Datos del torneo
+        <button class="btn btn-danger btn-sm" id="btn-borrar-torneo">Eliminar</button>
+      </h2>
+      <div class="grid-3">
+        <div class="field"><label>Nombre</label><input id="f-nombre" value="${escapeHtml(t.nombre)}"></div>
+        <div class="field"><label>Fecha</label><input id="f-fecha" value="${escapeHtml(t.fecha)}"></div>
+        <div class="field"><label>Lugar</label><input id="f-lugar" value="${escapeHtml(t.lugar)}"></div>
+      </div>
+      <label style="margin-top:14px;">Categorías</label>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        ${CATEGORIAS.map(c=>`<div class="check-pill ${t.categorias.includes(c)?'active':''}" data-cat="${c}">${CATEGORIA_LABEL[c]}</div>`).join('')}
+      </div>
+    </div>
+    ${renderPostulacionesPanel(t)}
+    <div class="panel">
+      <h2>Parejas y llave</h2>
+      ${t.categorias.length===0 ? '<div class="empty-state">Elegí al menos una categoría.</div>' : `
+        <div class="tabs" id="cat-tabs">
+          ${t.categorias.map(c=>`<div class="tab ${ (activeTab[t.id]||t.categorias[0])===c ? 'active':''}" data-cat="${c}">${CATEGORIA_LABEL[c]}</div>`).join('')}
+        </div>
+        <div id="cat-content"></div>
+      `}
+    </div>
+  `;
+}
+
+function wireTorneoPanel(t){
+  document.getElementById('f-nombre').addEventListener('change', e=>{ t.nombre=e.target.value; persist(); render(); });
+  document.getElementById('f-fecha').addEventListener('change', e=>{ t.fecha=e.target.value; persist(); });
+  document.getElementById('f-lugar').addEventListener('change', e=>{ t.lugar=e.target.value; persist(); });
+
+  document.getElementById('btn-borrar-torneo').onclick = ()=>{
+    if(!confirm(`¿Eliminar "${t.nombre}"?`)) return;
+    state.torneos = state.torneos.filter(x=>x.id!==t.id);
+    activeTorneoId = state.torneos[0]?.id || null;
+    persist(); render();
+  };
+
+  document.querySelectorAll('input[data-cat]').forEach(el=>{
+    el.classList.remove('check-pill');
+  });
+  
+  document.querySelectorAll('[data-cat]').forEach(el=>{
+    el.onclick = ()=>{
+      const cat = el.dataset.cat;
+      if(t.categorias.includes(cat)){
+        if(!confirm(`¿Quitar ${CATEGORIA_LABEL[cat]}?`)) return;
+        t.categorias = t.categorias.filter(c=>c!==cat);
+        delete t.parejas[cat]; delete t.brackets[cat];
+      } else {
+        t.categorias.push(cat);
+        t.parejas[cat] = []; t.brackets[cat] = null;
+      }
+      persist(); render();
+    };
+  });
+
+  if(t.categorias.length>0){
+    const currentCat = activeTab[t.id] || t.categorias[0];
+    activeTab[t.id] = currentCat;
+    document.getElementById('cat-content').innerHTML = renderCategoriaContent(t, currentCat);
+    wireCategoriaContent(t, currentCat);
+
+    document.querySelectorAll('#cat-tabs .tab').forEach(el=>{
+      el.onclick = ()=>{ activeTab[t.id]=el.dataset.cat; render(); };
+    });
+  }
+}
+
+function renderPostulacionesPanel(t){
+  const pendientes = (t.parejas[t.categorias[0]] || []).filter(p=>p.estado==='pendiente');
+  return `
+    <div class="panel">
+      <h2>Postulaciones pendientes ${pendientes.length ? `<span style="background:var(--red-dim);color:var(--red);font-size:0.7rem;font-weight:800;padding:5px 11px;border-radius:6px;">${pendientes.length}</span>` : ''}</h2>
+      ${pendientes.length===0 ? '<div class="empty-state">No hay postulaciones.</div>' :
+        pendientes.map(p=>{
+          const cat = Object.keys(t.parejas).find(c=>(t.parejas[c]||[]).find(x=>x.id===p.id));
+          return `
+            <div class="pareja-row">
+              <span class="nombre">${escapeHtml(p.j1)} / ${escapeHtml(p.j2)}<span style="color:var(--grey);font-size:0.78rem;"> — ${cat?CATEGORIA_LABEL[cat]:'N/A'}</span></span>
+              <span style="display:flex;gap:6px;">
+                <button class="btn btn-primary btn-sm" data-aprobar="${cat}:${p.id}">Aprobar</button>
+                <button class="btn btn-danger btn-sm" data-rechazar="${cat}:${p.id}">Rechazar</button>
+              </span>
+            </div>
+          `;
+        }).join('')
+      }
+    </div>
+  `;
+}
+
+function wirePostulacionesPanel(t){
+  document.querySelectorAll('[data-aprobar]').forEach(btn=>{
+    btn.onclick = ()=>{
+      const [cat, id] = btn.dataset.aprobar.split(':');
+      const p = (t.parejas[cat]||[]).find(x=>x.id===id);
+      if(p){ p.estado = 'aprobada'; persist(); render(); }
+    };
+  });
+  document.querySelectorAll('[data-rechazar]').forEach(btn=>{
+    btn.onclick = ()=>{
+      const [cat, id] = btn.dataset.rechazar.split(':');
+      if(!confirm('¿Rechazar?')) return;
+      t.parejas[cat] = (t.parejas[cat]||[]).filter(x=>x.id!==id);
+      persist(); render();
+    };
+  });
+}
+
+function renderCategoriaContent(t, cat){
+  const parejas = (t.parejas[cat] || []).filter(isAprobada);
+  const bracket = t.brackets[cat];
+  return `
+    <div class="grid-2" style="align-items:start;">
+      <div>
+        <label>Parejas (${parejas.length})</label>
+        <div id="parejas-list">
+          ${parejas.length===0 ? '<div class="empty-state">Sin parejas.</div>' :
+            parejas.map(p=>`
+              <div class="pareja-row">
+                <span class="nombre">${escapeHtml(p.j1)} / ${escapeHtml(p.j2)}</span>
+                <span class="x" data-remove="${p.id}">✕</span>
+              </div>
+            `).join('')
+          }
+        </div>
+        <div class="add-pareja-form">
+          <input id="new-j1" placeholder="Jugador 1">
+          <input id="new-j2" placeholder="Jugador 2">
+          <button class="btn btn-primary btn-sm" id="btn-add-pareja">+ Agregar</button>
+        </div>
+        <button class="btn btn-outline btn-block" id="btn-generar-llave" style="margin-top:16px;" ${parejas.length<2?'disabled':''}>
+          ${bracket ? 'Regenerar llave' : 'Generar llave'}
+        </button>
+      </div>
+      <div>
+        <label>Llave — ${CATEGORIA_LABEL[cat]}</label>
+        ${ bracket ? '<div class="bracket-wrap"><div class="bracket" id="bracket-view"></div></div>' : '<div class="empty-state">Generá la llave.</div>' }
+      </div>
+    </div>
+  `;
+}
+
+function wireCategoriaContent(t, cat){
+  document.querySelectorAll('[data-remove]').forEach(el=>{
+    el.onclick = ()=>{
+      t.parejas[cat] = t.parejas[cat].filter(p=>p.id!==el.dataset.remove);
+      persist(); render();
+    };
+  });
+
+  document.getElementById('btn-add-pareja').onclick = ()=>{
+    const j1 = document.getElementById('new-j1').value.trim();
+    const j2 = document.getElementById('new-j2').value.trim();
+    if(!j1 || !j2){ toast('Completá los nombres'); return; }
+    t.parejas[cat].push({ id: uid('p'), j1_id: null, j2_id: null, j1, j2, telefono:'', estado:'aprobada' });
+    persist(); render();
+  };
+
+  const btnGenerar = document.getElementById('btn-generar-llave');
+  if(btnGenerar){
+    btnGenerar.onclick = ()=>{
+      if(t.brackets[cat] && !confirm('¿Reiniciar?')) return;
+      t.brackets[cat] = generateBracket(t.parejas[cat]);
+      persist(); render();
+    };
+  }
+
+  if(t.brackets[cat]) renderBracketView(t, cat);
+}
+
+function teamLabel(team){
+  if(!team) return '<span style="color:var(--grey);">Por definir</span>';
+  if(team.bye) return '<span style="color:var(--grey);font-style:italic;">BYE</span>';
+  return `${escapeHtml(team.j1)} / ${escapeHtml(team.j2)}`;
+}
+
+function renderBracketView(t, cat){
+  const rounds = t.brackets[cat];
+  const wrap = document.getElementById('bracket-view');
+  wrap.innerHTML = '';
+  rounds.forEach((round, ri)=>{
+    const roundEl = document.createElement('div');
+    roundEl.className = 'round';
+    const lab = document.createElement('div');
+    lab.className = 'round-label';
+    lab.textContent = roundLabel(ri, rounds.length);
+    roundEl.appendChild(lab);
+
+    round.forEach((match, mi)=>{
+      const matchEl = document.createElement('div');
+      matchEl.className = 'match';
+      const canDecide = match.teamA && match.teamB && !match.teamA.bye && !match.teamB.bye && !match.winner;
+      const decided = !!match.winner;
+
+      const sideClass = team => {
+        if(!team) return 'tbd';
+        if(team.bye) return 'bye';
+        if(decided && team.id===match.winner?.id) return 'winner';
+        return '';
+      };
+
+      matchEl.innerHTML = `
+        <div class="side ${sideClass(match.teamA)}">
+          <span>${teamLabel(match.teamA)}</span>
+          ${canDecide ? `<button class="win-btn" data-round="${ri}" data-match="${mi}" data-side="A">Ganó</button>` : ''}
+        </div>
+        <div class="side ${sideClass(match.teamB)}">
+          <span>${teamLabel(match.teamB)}</span>
+          ${canDecide ? `<button class="win-btn" data-round="${ri}" data-match="${mi}" data-side="B">Ganó</button>` : ''}
+        </div>
+        ${decided ? `<div class="decided-tag">Definido ✓</div>` : ''}
+      `;
+      roundEl.appendChild(matchEl);
+    });
+    wrap.appendChild(roundEl);
+  });
+
+  wrap.querySelectorAll('.win-btn').forEach(btn=>{
+    btn.onclick = ()=>{
+      const ri = parseInt(btn.dataset.round), mi = parseInt(btn.dataset.match);
+      const match = rounds[ri][mi];
+      const winner = btn.dataset.side==='A' ? match.teamA : match.teamB;
+      propagateWinner(rounds, ri, mi, winner);
+      // Sumar puntos al ganador
+      if(winner && !winner.bye){
+        sumarPuntosAlGanador(state, t.id, cat, winner.id);
+      }
+      persist(); render();
+    };
+  });
+}
+
+function crearTorneo(){
+  const nombre = prompt('Nombre del torneo:');
+  if(!nombre) return;
+  const nuevo = {
+    id: uid('t'), nombre, fecha:'', lugar:'', estado:'abierto',
+    categorias: [], parejas:{}, brackets:{}
+  };
+  state.torneos.push(nuevo);
+  activeTorneoId = nuevo.id;
+  persist(); render();
+}
+
+// ---- SECCIÓN JUGADORES ----
+function renderJugadoresSection(){
+  const el = document.getElementById('section-jugadores');
+  el.innerHTML = `
+    <div class="panel">
+      <h2>Gestión de Jugadores
+        <button class="btn btn-primary btn-sm" id="btn-nuevo-jugador">+ Nuevo Jugador</button>
+      </h2>
+      <div id="jugadores-list"></div>
+    </div>
+  `;
+
+  const list = document.getElementById('jugadores-list');
+  if(!state.jugadores || state.jugadores.length===0){
+    list.innerHTML = '<div class="empty-state">Sin jugadores aún.</div>';
+  } else {
+    list.innerHTML = state.jugadores.map(j=>`
+      <div class="jugador-row">
+        <div style="display:flex;gap:10px;align-items:center;flex:1;">
+          <div class="foto-preview ${j.foto?'':'empty'}" id="foto-${j.id}">
+            ${j.foto ? `<img src="${j.foto}" alt="${j.nombre}">` : '📷'}
+          </div>
+          <div>
+            <div class="nombre">${escapeHtml(j.nombre)}</div>
+            <div style="font-size:0.75rem;color:var(--grey);">${CATEGORIA_LABEL[j.categoria] || j.categoria} · ${LATERALIDADES[j.lateralidad] || j.lateralidad}</div>
+          </div>
+        </div>
+        <span style="display:flex;gap:6px;">
+          <button class="btn btn-outline btn-sm" data-edit="${j.id}">Editar</button>
+          <button class="btn btn-danger btn-sm" data-delete="${j.id}">Borrar</button>
+        </span>
+      </div>
+    `).join('');
+  }
+
+  document.getElementById('btn-nuevo-jugador').onclick = crearJugador;
+
+  document.querySelectorAll('[data-edit]').forEach(btn=>{
+    btn.onclick = ()=>editarJugador(btn.dataset.edit);
+  });
+
+  document.querySelectorAll('[data-delete]').forEach(btn=>{
+    btn.onclick = ()=>{
+      if(!confirm('¿Borrar jugador?')) return;
+      state.jugadores = state.jugadores.filter(j=>j.id!==btn.dataset.delete);
+      persist(); render();
+    };
+  });
+}
+
+function crearJugador(){
+  const nombre = prompt('Nombre del jugador:');
+  if(!nombre) return;
+  state.jugadores.push({
+    id: uid('j'), nombre, lateralidad:'diestro', categoria:'7ma', foto:'', historial:[]
+  });
+  persist(); render();
+}
+
+function editarJugador(jId){
+  const j = state.jugadores.find(x=>x.id===jId);
+  if(!j) return;
+
+  const html = `
+    <div class="panel">
+      <h2>Editar Jugador
+        <button class="btn btn-outline btn-sm" id="btn-close-edit">Cerrar</button>
+      </h2>
+      <div class="grid-2">
+        <div>
+          <div class="field"><label>Nombre</label><input id="edit-nombre" value="${escapeHtml(j.nombre)}"></div>
+          <div class="field"><label>Categoría</label><select id="edit-cat">
+            ${CATEGORIAS.map(c=>`<option value="${c}" ${c===j.categoria?'selected':''}>${CATEGORIA_LABEL[c]}</option>`).join('')}
+          </select></div>
+          <div class="field"><label>Lateralidad</label><select id="edit-lat">
+            ${Object.entries(LATERALIDADES).map(([k,v])=>`<option value="${k}" ${k===j.lateralidad?'selected':''}>${v}</option>`).join('')}
+          </select></div>
+        </div>
+        <div>
+          <label>Foto</label>
+          <div class="foto-preview" id="preview-foto" style="margin-bottom:10px;">
+            ${j.foto ? `<img src="${j.foto}" alt="">` : '📷 Sin foto'}
+          </div>
+          <input type="file" id="file-foto" class="file-input" accept="image/*">
+          <button class="btn btn-outline btn-block btn-sm" id="btn-upload-foto">Subir foto</button>
+        </div>
+      </div>
+      <div style="margin-top:16px;">
+        <button class="btn btn-primary" id="btn-save-jugador">Guardar</button>
+      </div>
+    </div>
+  `;
+
+  const el = document.getElementById('section-jugadores');
+  el.innerHTML = html;
+
+  document.getElementById('btn-close-edit').onclick = ()=>render();
+  document.getElementById('btn-upload-foto').onclick = ()=>document.getElementById('file-foto').click();
+  
+  document.getElementById('file-foto').onchange = (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev)=>{
+      j.foto = ev.target.result;
+      document.getElementById('preview-foto').innerHTML = `<img src="${j.foto}" alt="">`;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  document.getElementById('btn-save-jugador').onclick = ()=>{
+    j.nombre = document.getElementById('edit-nombre').value;
+    j.categoria = document.getElementById('edit-cat').value;
+    j.lateralidad = document.getElementById('edit-lat').value;
+    persist(); render();
+  };
+}
+
+// ---- FUNCIONES UTILITARIAS ----
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+async function pollUpdatesAdmin(){
+  try{
+    const newState = await loadState(supabase);
+    const newStateJson = JSON.stringify(newState);
+    if(newStateJson !== lastStateJson){
+      state = newState;
+      lastStateJson = newStateJson;
+      render();
+    }
+  }catch(e){
+    console.error('Error en polling:', e);
+  }
+}
+
+// ---- INIT ----
+(async function init(){
+  try{
+    state = await loadState(supabase);
+    if(!state.jugadores) state.jugadores = [];
+    lastStateJson = JSON.stringify(state);
+    activeTorneoId = state.torneos[0]?.id || null;
+    render();
+    setInterval(pollUpdatesAdmin, 2000);
+  }catch(e){
+    console.error(e);
+    app.innerHTML = `<div class="panel"><div class="empty-state">Error conectando con la base de datos.</div></div>`;
+  }
+})();
+</script>
+
+</body>
+</html>
