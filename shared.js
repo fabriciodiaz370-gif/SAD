@@ -12,6 +12,16 @@ export const CATEGORIA_LABEL = { '3ra':'3ª','4ta':'4ª','5ta':'5ª','6ta':'6ª'
 // ============================================================
 export const POINTS_PER_WIN = 14;  // Puntos por ganar un partido
 
+// Configuración de puntos por posición en torneo
+export const POINTS_BY_POSITION = {
+  '1ro': 100,
+  '2do': 70,
+  '3ro': 50,
+  '4to': 30,
+  '5to': 20,
+  '6to': 10
+};
+
 // ============================================================
 // Lateralidad
 // ============================================================
@@ -60,7 +70,8 @@ export function seedDemoData(){
     estado: 'curso',
     categorias: ['7ma','6ta','5ta'],
     parejas: { '7ma': parejas7ma, '6ta': [], '5ta': [] },
-    brackets: { '7ma': null, '6ta': null, '5ta': null }
+    brackets: { '7ma': null, '6ta': null, '5ta': null },
+    puntos_por_posicion: { ...POINTS_BY_POSITION }
   };
   torneo.brackets['7ma'] = generateBracket(torneo.parejas['7ma']);
 
@@ -73,9 +84,10 @@ export function seedDemoData(){
     categorias:t.categorias,
     parejas: Object.fromEntries(t.categorias.map(c=>[c,[]])),
     brackets: Object.fromEntries(t.categorias.map(c=>[c,null])),
+    puntos_por_posicion: { ...POINTS_BY_POSITION }
   }));
 
-  return { torneos: [torneo, ...otros], jugadores };
+  return { torneos: [torneo, ...otros], jugadores, configuracion: { puntos_por_posicion: { ...POINTS_BY_POSITION } } };
 }
 
 // ============================================================
@@ -150,7 +162,7 @@ export function calcularRankingPorCategoria(jugadores, categoria){
   return ranking.map((j,i)=>({...j, puesto: i+1}));
 }
 
-export function sumarPuntosAlGanador(state, torneoId, categoria, parejaGanadoraId){
+export function sumarPuntosAlGanador(state, torneoId, categoria, parejaGanadoraId, posicion = null){
   const torneo = state.torneos.find(t=>t.id===torneoId);
   if(!torneo) return;
   const pareja = (torneo.parejas[categoria]||[]).find(p=>p.id===parejaGanadoraId);
@@ -160,6 +172,14 @@ export function sumarPuntosAlGanador(state, torneoId, categoria, parejaGanadoraI
   const j1Id = pareja.j1_id;
   const j2Id = pareja.j2_id;
   
+  // Determinar puntos según posición o usar POINTS_PER_WIN
+  let puntos = POINTS_PER_WIN;
+  if(posicion && torneo.puntos_por_posicion && torneo.puntos_por_posicion[posicion]){
+    puntos = torneo.puntos_por_posicion[posicion];
+  } else if(posicion && state.configuracion?.puntos_por_posicion?.[posicion]){
+    puntos = state.configuracion.puntos_por_posicion[posicion];
+  }
+  
   // Actualizar historial de cada jugador
   [j1Id, j2Id].forEach(jId=>{
     const jugador = state.jugadores.find(j=>j.id===jId);
@@ -167,16 +187,122 @@ export function sumarPuntosAlGanador(state, torneoId, categoria, parejaGanadoraI
       jugador.historial = jugador.historial || [];
       jugador.historial.push({
         torneoId, categoria, parejaId: parejaGanadoraId,
-        puntos_ganados: POINTS_PER_WIN, posicion: null, fecha: new Date().toISOString()
+        puntos_ganados: puntos, posicion: posicion, fecha: new Date().toISOString()
       });
     }
   });
 }
 
-export function roundLabel(idx, total){
-  const fromEnd = total - idx;
-  const map = {1:'FINAL', 2:'SEMIFINALES', 3:'CUARTOS', 4:'OCTAVOS', 5:'16VOS'};
-  return map[fromEnd] || `RONDA ${idx+1}`;
+// Función para obtener la posición final de una pareja en el torneo
+export function getPosicionFinal(rounds, parejaId) {
+  // Buscar en qué ronda fue eliminada la pareja
+  let posicion = null;
+  
+  // Recorrer todas las rondas
+  for (let ri = 0; ri < rounds.length; ri++) {
+    const round = rounds[ri];
+    for (let mi = 0; mi < round.length; mi++) {
+      const match = round[mi];
+      
+      // Si la pareja está en este partido
+      if ((match.teamA && match.teamA.id === parejaId) || 
+          (match.teamB && match.teamB.id === parejaId)) {
+        
+        // Si es la final (última ronda)
+        if (ri === rounds.length - 1) {
+          if (match.winner && match.winner.id === parejaId) {
+            return '1ro'; // Ganador
+          } else if (match.winner) {
+            return '2do'; // Subcampeón
+          }
+        }
+        
+        // Si perdió en este partido
+        if (match.winner && match.winner.id !== parejaId) {
+          // Determinar posición según la ronda
+          const totalRondas = rounds.length;
+          const rondasRestantes = totalRondas - ri - 1;
+          
+          // Posiciones: 1ro, 2do, 3ro, 4to, 5to, 6to, etc.
+          const posicionMap = {
+            0: '3ro', // Perdió en semifinal (2 rondas restantes)
+            1: '4to', // Perdió en cuartos
+            2: '5to', // Perdió en octavos
+            3: '6to'  // Perdió en 16vos
+          };
+          
+          return posicionMap[rondasRestantes] || 'participante';
+        }
+      }
+    }
+  }
+  
+  return null;
+}
+
+// Función para asignar puntos a todas las parejas según su posición final
+export function asignarPuntosPorPosicion(state, torneoId, categoria) {
+  const torneo = state.torneos.find(t=>t.id===torneoId);
+  if(!torneo || !torneo.brackets[categoria]) return;
+  
+  const bracket = torneo.brackets[categoria];
+  const parejas = torneo.parejas[categoria] || [];
+  
+  // Obtener todos los IDs de parejas que participaron
+  const parejasIds = parejas.filter(isAprobada).map(p => p.id);
+  
+  // Asignar puntos según posición
+  parejasIds.forEach(parejaId => {
+    const posicion = getPosicionFinal(bracket, parejaId);
+    if (posicion) {
+      sumarPuntosAlGanador(state, torneoId, categoria, parejaId, posicion);
+    }
+  });
+}
+
+// Función para crear o actualizar jugadores desde una pareja
+export function crearOActualizarJugadoresDesdePareja(state, pareja) {
+  if (!state.jugadores) state.jugadores = [];
+  
+  // Crear o actualizar jugador 1
+  if (pareja.j1 && !pareja.j1_id) {
+    const nuevoId = uid('j');
+    pareja.j1_id = nuevoId;
+    state.jugadores.push({
+      id: nuevoId,
+      nombre: pareja.j1,
+      lateralidad: 'diestro',
+      categoria: '7ma',
+      foto: '',
+      historial: []
+    });
+  } else if (pareja.j1 && pareja.j1_id) {
+    // Actualizar nombre si ya existe
+    const jugador = state.jugadores.find(j => j.id === pareja.j1_id);
+    if (jugador && jugador.nombre !== pareja.j1) {
+      jugador.nombre = pareja.j1;
+    }
+  }
+  
+  // Crear o actualizar jugador 2
+  if (pareja.j2 && !pareja.j2_id) {
+    const nuevoId = uid('j');
+    pareja.j2_id = nuevoId;
+    state.jugadores.push({
+      id: nuevoId,
+      nombre: pareja.j2,
+      lateralidad: 'diestro',
+      categoria: '7ma',
+      foto: '',
+      historial: []
+    });
+  } else if (pareja.j2 && pareja.j2_id) {
+    // Actualizar nombre si ya existe
+    const jugador = state.jugadores.find(j => j.id === pareja.j2_id);
+    if (jugador && jugador.nombre !== pareja.j2) {
+      jugador.nombre = pareja.j2;
+    }
+  }
 }
 
 // ============================================================
@@ -196,4 +322,10 @@ export async function saveState(supabase, state){
     id: 'main', data: state, updated_at: new Date().toISOString()
   });
   if(error) throw error;
+}
+
+export function roundLabel(idx, total){
+  const fromEnd = total - idx;
+  const map = {1:'FINAL', 2:'SEMIFINALES', 3:'CUARTOS', 4:'OCTAVOS', 5:'16VOS'};
+  return map[fromEnd] || `RONDA ${idx+1}`;
 }

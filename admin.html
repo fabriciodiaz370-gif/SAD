@@ -130,6 +130,13 @@
   .loading{padding:60px;text-align:center;color:var(--grey);}
 
   .file-input{display:none;}
+  
+  /* Estilos para configuración de puntos */
+  .puntos-config{display:grid;grid-template-columns:1fr;gap:12px;}
+  @media(min-width:400px){.puntos-config{grid-template-columns:1fr 1fr;}}
+  .puntos-config-item{display:flex;align-items:center;gap:10px;}
+  .puntos-config-item label{margin-bottom:0;flex:1;}
+  .puntos-config-item input{width:80px;text-align:center;}
 </style>
 </head>
 <body>
@@ -142,6 +149,7 @@
 <div class="section-tabs">
   <button class="section-tab active" data-section="torneos">Torneos & Llave</button>
   <button class="section-tab" data-section="jugadores">Jugadores</button>
+  <button class="section-tab" data-section="configuracion">Configuración</button>
 </div>
 
 <div id="app" class="loading">Cargando datos…</div>
@@ -151,7 +159,9 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import {
   SUPABASE_URL, SUPABASE_ANON_KEY, CATEGORIAS, CATEGORIA_LABEL, LATERALIDADES,
-  uid, generateBracket, propagateWinner, roundLabel, loadState, saveState, isAprobada, POINTS_PER_WIN, sumarPuntosAlGanador
+  uid, generateBracket, propagateWinner, roundLabel, loadState, saveState, isAprobada, 
+  POINTS_PER_WIN, sumarPuntosAlGanador, POINTS_BY_POSITION, crearOActualizarJugadoresDesdePareja,
+  asignarPuntosPorPosicion, getPosicionFinal
 } from './shared.js';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -201,6 +211,7 @@ function render(){
       <div class="main">
         <div id="section-torneos" class="section ${currentSection==='torneos'?'active':''}"></div>
         <div id="section-jugadores" class="section ${currentSection==='jugadores'?'active':''}"></div>
+        <div id="section-configuracion" class="section ${currentSection==='configuracion'?'active':''}"></div>
       </div>
     </div>
   `;
@@ -218,8 +229,10 @@ function render(){
 
   if(currentSection==='torneos'){
     renderTorneosSection();
-  } else {
+  } else if(currentSection==='jugadores'){
     renderJugadoresSection();
+  } else if(currentSection==='configuracion'){
+    renderConfiguracionSection();
   }
 }
 
@@ -236,7 +249,7 @@ function renderTorneosSection(){
       const div = document.createElement('div');
       div.className = 'torneo-item' + (tr.id===activeTorneoId ? ' active' : '');
       const totalParejas = Object.values(tr.parejas).reduce((a,arr)=>a+arr.length,0);
-      div.innerHTML = `${tr.nombre}<small>${tr.fecha} · ${totalParejas} parejas</small>`;
+      div.innerHTML = `${escapeHtml(tr.nombre)}<small>${escapeHtml(tr.fecha)} · ${totalParejas} parejas</small>`;
       div.onclick = ()=>{ activeTorneoId = tr.id; render(); };
       list.appendChild(div);
     });
@@ -244,7 +257,7 @@ function renderTorneosSection(){
   }
 
   if(!t){
-    el.innerHTML = '<div class="panel"><div class="empty-state">Elegí un torneo o creá uno nuevo.</div></div>';
+    el.innerHTML = '<div class="panel"><div class="empty-state">Elige un torneo o crea uno nuevo.</div></div>';
     return;
   }
 
@@ -271,7 +284,7 @@ function renderTorneoPanel(t){
     ${renderPostulacionesPanel(t)}
     <div class="panel">
       <h2>Parejas y llave</h2>
-      ${t.categorias.length===0 ? '<div class="empty-state">Elegí al menos una categoría.</div>' : `
+      ${t.categorias.length===0 ? '<div class="empty-state">Elige al menos una categoría.</div>' : `
         <div class="tabs" id="cat-tabs">
           ${t.categorias.map(c=>`<div class="tab ${ (activeTab[t.id]||t.categorias[0])===c ? 'active':''}" data-cat="${c}">${CATEGORIA_LABEL[c]}</div>`).join('')}
         </div>
@@ -293,10 +306,6 @@ function wireTorneoPanel(t){
     persist(); render();
   };
 
-  document.querySelectorAll('input[data-cat]').forEach(el=>{
-    el.classList.remove('check-pill');
-  });
-  
   document.querySelectorAll('[data-cat]').forEach(el=>{
     el.onclick = ()=>{
       const cat = el.dataset.cat;
@@ -307,6 +316,9 @@ function wireTorneoPanel(t){
       } else {
         t.categorias.push(cat);
         t.parejas[cat] = []; t.brackets[cat] = null;
+        // Inicializar puntos por posición para esta categoría
+        if(!t.puntos_por_posicion) t.puntos_por_posicion = {};
+        if(!t.puntos_por_posicion[cat]) t.puntos_por_posicion[cat] = { ...POINTS_BY_POSITION };
       }
       persist(); render();
     };
@@ -325,7 +337,10 @@ function wireTorneoPanel(t){
 }
 
 function renderPostulacionesPanel(t){
-  const pendientes = (t.parejas[t.categorias[0]] || []).filter(p=>p.estado==='pendiente');
+  const pendientes = [];
+  t.categorias.forEach(cat => {
+    pendientes.push(...(t.parejas[cat] || []).filter(p=>p.estado==='pendiente'));
+  });
   return `
     <div class="panel">
       <h2>Postulaciones pendientes ${pendientes.length ? `<span style="background:var(--red-dim);color:var(--red);font-size:0.7rem;font-weight:800;padding:5px 11px;border-radius:6px;">${pendientes.length}</span>` : ''}</h2>
@@ -352,7 +367,12 @@ function wirePostulacionesPanel(t){
     btn.onclick = ()=>{
       const [cat, id] = btn.dataset.aprobar.split(':');
       const p = (t.parejas[cat]||[]).find(x=>x.id===id);
-      if(p){ p.estado = 'aprobada'; persist(); render(); }
+      if(p){ 
+        p.estado = 'aprobada';
+        // Crear jugadores si no existen
+        crearOActualizarJugadoresDesdePareja(state, p);
+        persist(); render(); 
+      }
     };
   });
   document.querySelectorAll('[data-rechazar]').forEach(btn=>{
@@ -390,6 +410,11 @@ function renderCategoriaContent(t, cat){
         <button class="btn btn-outline btn-block" id="btn-generar-llave" style="margin-top:16px;" ${parejas.length<2?'disabled':''}>
           ${bracket ? 'Regenerar llave' : 'Generar llave'}
         </button>
+        ${bracket ? `
+          <button class="btn btn-primary btn-block" id="btn-asignar-puntos" style="margin-top:10px;">
+            Asignar Puntos por Posición
+          </button>
+        ` : ''}
       </div>
       <div>
         <label>Llave — ${CATEGORIA_LABEL[cat]}</label>
@@ -411,7 +436,13 @@ function wireCategoriaContent(t, cat){
     const j1 = document.getElementById('new-j1').value.trim();
     const j2 = document.getElementById('new-j2').value.trim();
     if(!j1 || !j2){ toast('Completá los nombres'); return; }
-    t.parejas[cat].push({ id: uid('p'), j1_id: null, j2_id: null, j1, j2, telefono:'', estado:'aprobada' });
+    
+    const nuevaPareja = { id: uid('p'), j1_id: null, j2_id: null, j1, j2, telefono:'', estado:'aprobada' };
+    t.parejas[cat].push(nuevaPareja);
+    
+    // Crear jugadores automáticamente
+    crearOActualizarJugadoresDesdePareja(state, nuevaPareja);
+    
     persist(); render();
   };
 
@@ -421,6 +452,16 @@ function wireCategoriaContent(t, cat){
       if(t.brackets[cat] && !confirm('¿Reiniciar?')) return;
       t.brackets[cat] = generateBracket(t.parejas[cat]);
       persist(); render();
+    };
+  }
+
+  const btnAsignarPuntos = document.getElementById('btn-asignar-puntos');
+  if(btnAsignarPuntos){
+    btnAsignarPuntos.onclick = ()=>{
+      if(!confirm('¿Asignar puntos a todas las parejas según su posición final?')) return;
+      asignarPuntosPorPosicion(state, t.id, cat);
+      persist(); render();
+      toast('Puntos asignados ✓');
     };
   }
 
@@ -480,7 +521,7 @@ function renderBracketView(t, cat){
       const match = rounds[ri][mi];
       const winner = btn.dataset.side==='A' ? match.teamA : match.teamB;
       propagateWinner(rounds, ri, mi, winner);
-      // Sumar puntos al ganador
+      // Sumar puntos al ganador (por partido ganado)
       if(winner && !winner.bye){
         sumarPuntosAlGanador(state, t.id, cat, winner.id);
       }
@@ -494,7 +535,8 @@ function crearTorneo(){
   if(!nombre) return;
   const nuevo = {
     id: uid('t'), nombre, fecha:'', lugar:'', estado:'abierto',
-    categorias: [], parejas:{}, brackets:{}
+    categorias: [], parejas:{}, brackets:{},
+    puntos_por_posicion: { ...POINTS_BY_POSITION }
   };
   state.torneos.push(nuevo);
   activeTorneoId = nuevo.id;
@@ -647,9 +689,126 @@ function editarJugador(jId){
   };
 }
 
+// ---- SECCIÓN CONFIGURACIÓN ----
+function renderConfiguracionSection(){
+  const el = document.getElementById('section-configuracion');
+  
+  // Inicializar configuración si no existe
+  if(!state.configuracion) {
+    state.configuracion = { puntos_por_posicion: { ...POINTS_BY_POSITION } };
+  }
+  
+  el.innerHTML = `
+    <div class="panel">
+      <h2>Configuración Global de Puntos</h2>
+      <p style="color:var(--grey);margin-bottom:20px;">
+        Configura cuántos puntos recibe cada jugador según su posición final en el torneo.
+      </p>
+      <div class="puntos-config" id="puntos-config">
+        ${Object.entries(POINTS_BY_POSITION).map(([pos, valor]) => `
+          <div class="puntos-config-item">
+            <label>${pos.toUpperCase()}</label>
+            <input type="number" id="puntos-${pos}" value="${state.configuracion.puntos_por_posicion[pos] || valor}" min="0">
+          </div>
+        `).join('')}
+      </div>
+      <button class="btn btn-primary" id="btn-guardar-config" style="margin-top:20px;">Guardar Configuración</button>
+    </div>
+    
+    <div class="panel">
+      <h2>Configuración por Torneo</h2>
+      <p style="color:var(--grey);margin-bottom:20px;">
+        Cada torneo puede tener su propia configuración de puntos.
+      </p>
+      <div id="torneos-config-list"></div>
+    </div>
+  `;
+  
+  // Cargar valores actuales
+  Object.entries(POINTS_BY_POSITION).forEach(([pos]) => {
+    const input = document.getElementById(`puntos-${pos}`);
+    if(input) {
+      input.value = state.configuracion.puntos_por_posicion[pos] || POINTS_BY_POSITION[pos];
+    }
+  });
+  
+  // Guardar configuración global
+  document.getElementById('btn-guardar-config').onclick = () => {
+    Object.entries(POINTS_BY_POSITION).forEach(([pos]) => {
+      const input = document.getElementById(`puntos-${pos}`);
+      if(input) {
+        state.configuracion.puntos_por_posicion[pos] = parseInt(input.value) || 0;
+      }
+    });
+    persist();
+    toast('Configuración guardada ✓');
+  };
+  
+  // Lista de torneos para configuración individual
+  const torneosList = document.getElementById('torneos-config-list');
+  if(torneosList) {
+    torneosList.innerHTML = state.torneos.map(torneo => {
+      const config = torneo.puntos_por_posicion || {};
+      return `
+        <div style="margin-bottom:20px;border:1px solid var(--line);border-radius:10px;padding:15px;">
+          <h3 style="font-size:0.9rem;font-weight:700;margin-bottom:10px;">${escapeHtml(torneo.nombre)}</h3>
+          <div class="puntos-config">
+            ${Object.entries(POINTS_BY_POSITION).map(([pos]) => {
+              const valor = config[torneo.categorias[0]]?.[pos] || config[pos] || POINTS_BY_POSITION[pos];
+              return `
+                <div class="puntos-config-item">
+                  <label>${pos.toUpperCase()}</label>
+                  <input type="number" data-torneo="${torneo.id}" data-pos="${pos}" value="${valor}" min="0">
+                </div>
+              `;
+            }).join('')}
+          </div>
+          <button class="btn btn-primary btn-sm" data-torneo="${torneo.id}" style="margin-top:10px;">Guardar</button>
+        </div>
+      `;
+    }).join('');
+    
+    // Eventos para guardar configuración por torneo
+    document.querySelectorAll('[data-torneo]').forEach(btn => {
+      btn.onclick = () => {
+        const torneoId = btn.dataset.torneo;
+        const torneo = state.torneos.find(t => t.id === torneoId);
+        if(!torneo) return;
+        
+        if(!torneo.puntos_por_posicion) {
+          torneo.puntos_por_posicion = {};
+        }
+        
+        // Guardar configuración para todas las categorías del torneo
+        torneo.categorias.forEach(cat => {
+          if(!torneo.puntos_por_posicion[cat]) {
+            torneo.puntos_por_posicion[cat] = { ...POINTS_BY_POSITION };
+          }
+        });
+        
+        // Actualizar valores
+        Object.entries(POINTS_BY_POSITION).forEach(([pos]) => {
+          const input = document.querySelector(`[data-torneo="${torneoId}"][data-pos="${pos}"]`);
+          if(input) {
+            const valor = parseInt(input.value) || 0;
+            torneo.categorias.forEach(cat => {
+              if(torneo.puntos_por_posicion[cat]) {
+                torneo.puntos_por_posicion[cat][pos] = valor;
+              }
+            });
+          }
+        });
+        
+        persist();
+        toast('Configuración del torneo guardada ✓');
+      };
+    });
+  }
+}
+
 // ---- FUNCIONES UTILITARIAS ----
 function escapeHtml(str){
-  return String(str).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  return String(str).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[m]));
 }
 
 async function pollUpdatesAdmin(){
@@ -672,6 +831,13 @@ async function pollUpdatesAdmin(){
   try{
     state = await loadState(supabase);
     if(!state.jugadores) state.jugadores = [];
+    if(!state.configuracion) state.configuracion = { puntos_por_posicion: { ...POINTS_BY_POSITION } };
+    // Asegurar que todos los torneos tengan configuración de puntos
+    state.torneos.forEach(torneo => {
+      if(!torneo.puntos_por_posicion) {
+        torneo.puntos_por_posicion = { ...POINTS_BY_POSITION };
+      }
+    });
     lastStateJson = JSON.stringify(state);
     activeTorneoId = state.torneos[0]?.id || null;
     render();
