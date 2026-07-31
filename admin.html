@@ -269,9 +269,9 @@ function renderTorneoPanel(t){
         <div class="field"><label>Fecha</label><input id="f-fecha" value="${escapeHtml(t.fecha)}"></div>
         <div class="field"><label>Lugar</label><input id="f-lugar" value="${escapeHtml(t.lugar)}"></div>
       </div>
-      <label style="margin-top:14px;">Categorías</label>
+      <label style="margin-top:14px;">Categorías ${t.esPersonalizado ? '(Todas compiten en una sola llave)' : ''}</label>
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
-        ${CATEGORIAS.map(c=>`<div class="check-pill ${t.categorias.includes(c)?'active':''}" data-cat="${c}">${CATEGORIA_LABEL[c]}</div>`).join('')}
+        ${CATEGORIAS.map(c=>`<div class="check-pill ${(t.esPersonalizado ? (t.categoriasOriginales || []).includes(c) : t.categorias.includes(c))?'active':''}" data-cat="${c}">${CATEGORIA_LABEL[c]}</div>`).join('')}
       </div>
       <label style="margin-top:14px;">Inscripciones</label>
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
@@ -286,9 +286,9 @@ function renderTorneoPanel(t){
     ${renderPartidosPanel(t)}
     <div class="panel">
       <h2>Parejas y llave</h2>
-      ${t.categorias.length===0 ? '<div class="empty-state">Elegí al menos una categoría.</div>' : `
+      ${(t.esPersonalizado ? (t.categoriasOriginales || []).length : t.categorias.length)===0 ? '<div class="empty-state">Elegí al menos una categoría.</div>' : `
         <div class="tabs" id="cat-tabs">
-          ${t.categorias.map(c=>`<div class="tab ${ (activeTab[t.id]||t.categorias[0])===c ? 'active':''}" data-cat="${c}">${CATEGORIA_LABEL[c]}</div>`).join('')}
+          ${t.esPersonalizado ? `<div class="tab active" data-cat="personalizado">Todas las categorías</div>` : t.categorias.map(c=>`<div class="tab ${ (activeTab[t.id]||t.categorias[0])===c ? 'active':''}" data-cat="${c}">${CATEGORIA_LABEL[c]}</div>`).join('')}
         </div>
         <div id="cat-content"></div>
       `}
@@ -519,12 +519,46 @@ function renderBracketView(t, cat){
 }
 
 function crearTorneo(){
-  const nombre = prompt('Nombre del torneo:');
-  if(!nombre) return;
+  const tipo = prompt('Tipo de torneo:\n1. Estandar\n2. Personalizado\nIngresá 1 o 2:');
+  if(!tipo || (tipo !== '1' && tipo !== '2')) return;
+
+  let nombre = '';
+  let categoriasSeleccionadas = [];
+  let esPersonalizado = false;
+
+  if(tipo === '1'){
+    nombre = prompt('Nombre del torneo:');
+    if(!nombre) return;
+  } else {
+    nombre = prompt('Nombre del torneo personalizado (ej: Suma 11):');
+    if(!nombre) return;
+    esPersonalizado = true;
+    const categoriasStr = CATEGORIAS.map(c => c + ': ' + CATEGORIA_LABEL[c]).join('\n');
+    const seleccion = prompt('Seleccioná categorías (separadas por coma):\n\n' + categoriasStr + '\n\nEjemplo: 3ra,4ta,5ta');
+    if(!seleccion) return;
+    const seleccionArray = seleccion.split(',').map(s => s.trim().toLowerCase());
+    categoriasSeleccionadas = CATEGORIAS.filter(c => seleccionArray.includes(c));
+    if(categoriasSeleccionadas.length === 0) {
+      alert('No se seleccionaron categorías válidas. Usá: ' + CATEGORIAS.join(', '));
+      return;
+    }
+  }
+
   const nuevo = {
-    id: uid('t'), nombre, fecha:'', lugar:'', estado:'abierto', inscripcionAbierta: true,
-    categorias: [], parejas:{}, brackets:{}, partidos: []
+    id: uid('t'),
+    nombre,
+    fecha:'',
+    lugar:'',
+    estado:'abierto',
+    inscripcionAbierta: true,
+    categorias: esPersonalizado ? ['personalizado'] : [],
+    parejas: esPersonalizado ? { 'personalizado': [] } : {},
+    brackets: esPersonalizado ? { 'personalizado': null } : {},
+    partidos: [],
+    esPersonalizado: esPersonalizado,
+    categoriasOriginales: esPersonalizado ? categoriasSeleccionadas : []
   };
+
   state.torneos.push(nuevo);
   activeTorneoId = nuevo.id;
   persist(); render();
