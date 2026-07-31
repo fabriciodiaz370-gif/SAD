@@ -140,8 +140,8 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import {
   SUPABASE_URL, SUPABASE_ANON_KEY, CATEGORIAS, CATEGORIA_LABEL, LATERALIDADES, POSICION_LABELS,
-  loadState, calcularRankingPorCategoria, getJugadorPartidosStats
-} from './shared.js?v=4';
+  loadState, calcularRankingPorCategoria, getJugadorPartidosStats, getAllCategorias, getCategoriaLabel
+} from './shared.js?v=5';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let state = null;
@@ -159,7 +159,7 @@ function avatarHtml(j, big){
 // ---- RANKING DE JUGADORES ----
 function populateCategoriaSelect(){
   const sel = document.getElementById('rk-categoria');
-  sel.innerHTML = CATEGORIAS.map(c=>`<option value="${c}">${CATEGORIA_LABEL[c]}</option>`).join('');
+  sel.innerHTML = getAllCategorias(state).map(c=>`<option value="${c}">${getCategoriaLabel(state,c)}</option>`).join('');
   sel.onchange = renderRanking;
 }
 
@@ -223,7 +223,7 @@ function abrirPerfil(jugadorId){
         const companero = pareja ? (pareja.j1_id === j.id ? pareja.j2 : pareja.j1) : null;
         return `
           <div class="historial-item">
-            <div class="torneo">${escapeHtml(t?.nombre || 'Torneo')} <span style="color:var(--grey);font-weight:500;">— ${CATEGORIA_LABEL[h.categoria] || h.categoria}</span></div>
+            <div class="torneo">${escapeHtml(t?.nombre || 'Torneo')} <span style="color:var(--grey);font-weight:500;">— ${getCategoriaLabel(state,h.categoria)}</span></div>
             <div class="detalle">
               <span class="puesto-tag">${POSICION_LABELS[h.posicion] || h.posicion}</span>
               ${companero ? ` · con ${escapeHtml(companero)}` : ''} · +${h.puntos_ganados} pts

@@ -4,8 +4,43 @@
 export const SUPABASE_URL = 'https://cewwbutnpkjocjynapem.supabase.co';
 export const SUPABASE_ANON_KEY = 'sb_publishable_C3nZa7XNVocbPOXOGXMNUA_ZhAQZobf';
 
-export const CATEGORIAS = ['3ra','4ta','5ta','6ta','7ma','suma11','suma14'];
-export const CATEGORIA_LABEL = { '3ra':'3ª','4ta':'4ª','5ta':'5ª','6ta':'6ª','7ma':'7ª','suma11':'Suma 11','suma14':'Suma 14' };
+export const CATEGORIAS = ['3ra','4ta','5ta','6ta','7ma'];
+export const CATEGORIA_LABEL = { '3ra':'3ª','4ta':'4ª','5ta':'5ª','6ta':'6ª','7ma':'7ª' };
+
+// ============================================================
+// Categorías "Suma" (p.ej. Suma 11, Suma 14): la categoría de la
+// pareja surge de sumar la categoría individual de cada jugador.
+// El admin puede crear las que quiera (Suma 5 a Suma 16, o la que sea)
+// desde el panel — no están hardcodeadas, se guardan en state.config.
+// ============================================================
+export const DEFAULT_CATEGORIAS_SUMA = [11, 14];
+
+export function isCategoriaSuma(codigo){
+  return /^suma\d+$/.test(String(codigo||''));
+}
+
+export function sumaCategoriaCode(n){
+  return `suma${n}`;
+}
+
+export function getCategoriasSumaConfig(state){
+  const arr = (state?.config?.categoriasSuma) || [];
+  return arr.slice().sort((a,b)=>a-b);
+}
+
+// Todas las categorías disponibles para armar un torneo: las fijas + las Suma configuradas
+export function getAllCategorias(state){
+  const extra = getCategoriasSumaConfig(state).map(sumaCategoriaCode);
+  return [...CATEGORIAS, ...extra];
+}
+
+// Etiqueta de cualquier categoría (fija o Suma dinámica)
+export function getCategoriaLabel(state, codigo){
+  if(CATEGORIA_LABEL[codigo]) return CATEGORIA_LABEL[codigo];
+  const m = /^suma(\d+)$/.exec(codigo||'');
+  if(m) return `Suma ${m[1]}`;
+  return codigo || '';
+}
 
 // ============================================================
 // Configuración de puntuación (editable desde el panel de admin;
@@ -126,7 +161,7 @@ export function seedDemoData(){
     partidos: [],
   }));
 
-  return { torneos: [torneo, ...otros], jugadores, config: { puntos: {...DEFAULT_PUNTOS_CONFIG} } };
+  return { torneos: [torneo, ...otros], jugadores, config: { puntos: {...DEFAULT_PUNTOS_CONFIG}, categoriasSuma: [...DEFAULT_CATEGORIAS_SUMA] } };
 }
 
 // ============================================================
@@ -190,8 +225,12 @@ export function propagateWinner(rounds, roundIdx, matchIdx, winner){
 // Funciones para ranking y puntuación
 // ============================================================
 export function calcularRankingPorCategoria(jugadores, categoria){
-  // Filtrar jugadores de esa categoría, sumar puntos y ordenar
-  const jugadoresCat = jugadores.filter(j=>j.categoria===categoria);
+  // En categorías "Suma" el jugador no tiene esa categoría como propia (la suya es
+  // 3ra/4ta/etc.), así que en vez de filtrar por j.categoria tomamos a quienes
+  // sumaron puntos en esa categoría dentro de su historial.
+  const jugadoresCat = isCategoriaSuma(categoria)
+    ? jugadores.filter(j => (j.historial||[]).some(h=>h.categoria===categoria))
+    : jugadores.filter(j=>j.categoria===categoria);
   const ranking = jugadoresCat.map(j=>{
     const puntos = (j.historial || [])
       .filter(h=>h.categoria===categoria)
@@ -285,6 +324,7 @@ export async function loadState(supabase){
     if(!state.jugadores) state.jugadores = [];
     if(!state.config) state.config = { puntos: {...DEFAULT_PUNTOS_CONFIG} };
     if(!state.config.puntos) state.config.puntos = {...DEFAULT_PUNTOS_CONFIG};
+    if(!state.config.categoriasSuma) state.config.categoriasSuma = [...DEFAULT_CATEGORIAS_SUMA];
     // Compatibilidad con torneos guardados antes de que existiera "partidos" / "inscripcionAbierta"
     (state.torneos || []).forEach(t=>{
       if(!t.partidos) t.partidos = [];

@@ -153,8 +153,9 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import {
   SUPABASE_URL, SUPABASE_ANON_KEY, CATEGORIAS, CATEGORIA_LABEL, LATERALIDADES,
   uid, generateBracket, propagateWinner, roundLabel, loadState, saveState, isAprobada,
-  resolverJugadorId, registrarResultadoPartido, getPuntosConfig, DEFAULT_PUNTOS_CONFIG, POSICION_LABELS
-} from './shared.js?v=4';
+  resolverJugadorId, registrarResultadoPartido, getPuntosConfig, DEFAULT_PUNTOS_CONFIG, POSICION_LABELS,
+  isCategoriaSuma, getAllCategorias, getCategoriaLabel, getCategoriasSumaConfig
+} from './shared.js?v=5';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const app = document.getElementById('app');
@@ -271,8 +272,9 @@ function renderTorneoPanel(t){
       </div>
       <label style="margin-top:14px;">Categorías</label>
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
-        ${CATEGORIAS.map(c=>`<div class="check-pill ${t.categorias.includes(c)?'active':''}" data-cat="${c}">${CATEGORIA_LABEL[c]}</div>`).join('')}
+        ${getAllCategorias(state).map(c=>`<div class="check-pill ${t.categorias.includes(c)?'active':''}" data-cat="${c}">${getCategoriaLabel(state,c)}</div>`).join('')}
       </div>
+      <div style="color:var(--grey);font-size:0.72rem;margin-top:6px;">Las categorías "Suma" (Suma 11, Suma 14, etc.) se crean y administran desde la pestaña Configuración.</div>
       <label style="margin-top:14px;">Inscripciones</label>
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
         <div class="check-pill ${t.inscripcionAbierta ? 'active' : ''}" id="btn-insc-abierta">Abiertas</div>
@@ -288,7 +290,7 @@ function renderTorneoPanel(t){
       <h2>Parejas y llave</h2>
       ${t.categorias.length===0 ? '<div class="empty-state">Elegí al menos una categoría.</div>' : `
         <div class="tabs" id="cat-tabs">
-          ${t.categorias.map(c=>`<div class="tab ${ (activeTab[t.id]||t.categorias[0])===c ? 'active':''}" data-cat="${c}">${CATEGORIA_LABEL[c]}</div>`).join('')}
+          ${t.categorias.map(c=>`<div class="tab ${ (activeTab[t.id]||t.categorias[0])===c ? 'active':''}" data-cat="${c}">${getCategoriaLabel(state,c)}</div>`).join('')}
         </div>
         <div id="cat-content"></div>
       `}
@@ -323,7 +325,7 @@ function wireTorneoPanel(t){
     el.onclick = ()=>{
       const cat = el.dataset.cat;
       if(t.categorias.includes(cat)){
-        if(!confirm(`¿Quitar ${CATEGORIA_LABEL[cat]}?`)) return;
+        if(!confirm(`¿Quitar ${getCategoriaLabel(state,cat)}?`)) return;
         t.categorias = t.categorias.filter(c=>c!==cat);
         delete t.parejas[cat]; delete t.brackets[cat];
       } else {
@@ -334,6 +336,7 @@ function wireTorneoPanel(t){
     };
   });
 
+  wirePostulacionesPanel(t);
   wirePartidosPanel(t);
 
   if(t.categorias.length>0){
@@ -348,21 +351,54 @@ function wireTorneoPanel(t){
   }
 }
 
+function categoriaRealJugador(jId){
+  const j = (state.jugadores||[]).find(x=>x.id===jId);
+  return j ? j.categoria : null;
+}
+
 function renderPostulacionesPanel(t){
-  const pendientes = (t.parejas[t.categorias[0]] || []).filter(p=>p.estado==='pendiente');
+  // Recorremos TODAS las categorías del torneo, no solo la primera
+  const pendientes = [];
+  (t.categorias||[]).forEach(cat=>{
+    (t.parejas[cat]||[]).forEach(p=>{
+      if(p.estado==='pendiente') pendientes.push({...p, _cat: cat});
+    });
+  });
+
   return `
     <div class="panel">
       <h2>Postulaciones pendientes ${pendientes.length ? `<span style="background:var(--red-dim);color:var(--red);font-size:0.7rem;font-weight:800;padding:5px 11px;border-radius:6px;">${pendientes.length}</span>` : ''}</h2>
       ${pendientes.length===0 ? '<div class="empty-state">No hay postulaciones.</div>' :
         pendientes.map(p=>{
-          const cat = Object.keys(t.parejas).find(c=>(t.parejas[c]||[]).find(x=>x.id===p.id));
+          const cat = p._cat;
+          const esSuma = isCategoriaSuma(cat);
+          let discrepanciaHtml = '';
+          if(esSuma && (p.cat_j1 || p.cat_j2)){
+            const realJ1 = categoriaRealJugador(p.j1_id);
+            const realJ2 = categoriaRealJugador(p.j2_id);
+            const mismatchJ1 = realJ1 && p.cat_j1 && realJ1 !== p.cat_j1;
+            const mismatchJ2 = realJ2 && p.cat_j2 && realJ2 !== p.cat_j2;
+            discrepanciaHtml = `
+              <div style="display:flex;gap:22px;flex-wrap:wrap;font-size:0.78rem;color:var(--grey);margin-top:4px;">
+                <span>${escapeHtml(p.j1)}: declaró <b style="color:var(--white);">${p.cat_j1?getCategoriaLabel(state,p.cat_j1):'—'}</b>
+                  ${mismatchJ1 ? ` <span style="color:var(--red);font-weight:700;">⚠ en la base figura ${getCategoriaLabel(state,realJ1)}</span>` : ''}
+                </span>
+                <span>${escapeHtml(p.j2)}: declaró <b style="color:var(--white);">${p.cat_j2?getCategoriaLabel(state,p.cat_j2):'—'}</b>
+                  ${mismatchJ2 ? ` <span style="color:var(--red);font-weight:700;">⚠ en la base figura ${getCategoriaLabel(state,realJ2)}</span>` : ''}
+                </span>
+              </div>
+            `;
+          }
           return `
-            <div class="pareja-row">
-              <span class="nombre">${escapeHtml(p.j1)} / ${escapeHtml(p.j2)}<span style="color:var(--grey);font-size:0.78rem;"> — ${cat?CATEGORIA_LABEL[cat]:'N/A'}</span></span>
-              <span style="display:flex;gap:6px;">
-                <button class="btn btn-primary btn-sm" data-aprobar="${cat}:${p.id}">Aprobar</button>
-                <button class="btn btn-danger btn-sm" data-rechazar="${cat}:${p.id}">Rechazar</button>
-              </span>
+            <div class="pareja-row" style="flex-direction:column;align-items:stretch;gap:4px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+                <span class="nombre">${escapeHtml(p.j1)} / ${escapeHtml(p.j2)}<span style="color:var(--grey);font-size:0.78rem;"> — ${getCategoriaLabel(state,cat)}</span></span>
+                <span style="display:flex;gap:6px;">
+                  <button class="btn btn-primary btn-sm" data-aprobar="${cat}:${p.id}">Aprobar</button>
+                  <button class="btn btn-danger btn-sm" data-rechazar="${cat}:${p.id}">Rechazar</button>
+                </span>
+              </div>
+              ${discrepanciaHtml}
             </div>
           `;
         }).join('')
@@ -392,6 +428,7 @@ function wirePostulacionesPanel(t){
 function renderCategoriaContent(t, cat){
   const parejas = (t.parejas[cat] || []).filter(isAprobada);
   const bracket = t.brackets[cat];
+  const esSuma = isCategoriaSuma(cat);
   return `
     <div class="grid-2" style="align-items:start;">
       <div>
@@ -400,7 +437,9 @@ function renderCategoriaContent(t, cat){
           ${parejas.length===0 ? '<div class="empty-state">Sin parejas.</div>' :
             parejas.map(p=>`
               <div class="pareja-row">
-                <span class="nombre">${escapeHtml(p.j1)} / ${escapeHtml(p.j2)}</span>
+                <span class="nombre">${escapeHtml(p.j1)} / ${escapeHtml(p.j2)}
+                  ${esSuma && (p.cat_j1||p.cat_j2) ? `<span style="display:block;color:var(--grey);font-weight:500;font-size:0.74rem;">${p.cat_j1?getCategoriaLabel(state,p.cat_j1):'?'} + ${p.cat_j2?getCategoriaLabel(state,p.cat_j2):'?'}</span>` : ''}
+                </span>
                 <span class="x" data-remove="${p.id}">✕</span>
               </div>
             `).join('')
@@ -409,18 +448,22 @@ function renderCategoriaContent(t, cat){
         <div class="add-pareja-form">
           <input id="new-j1" placeholder="Jugador 1" list="jugadores-datalist" autocomplete="off">
           <input id="new-j2" placeholder="Jugador 2" list="jugadores-datalist" autocomplete="off">
+          ${esSuma ? `
+            <select id="new-j1-cat" title="Categoría de Jugador 1">${CATEGORIAS.map(c=>`<option value="${c}">${CATEGORIA_LABEL[c]}</option>`).join('')}</select>
+            <select id="new-j2-cat" title="Categoría de Jugador 2">${CATEGORIAS.map(c=>`<option value="${c}">${CATEGORIA_LABEL[c]}</option>`).join('')}</select>
+          ` : ''}
           <button class="btn btn-primary btn-sm" id="btn-add-pareja">+ Agregar</button>
         </div>
         <datalist id="jugadores-datalist">
           ${(state.jugadores || []).map(j=>`<option value="${escapeHtml(j.nombre)}"></option>`).join('')}
         </datalist>
-        <div style="color:var(--grey);font-size:0.72rem;margin-top:4px;">Si el jugador ya está registrado, empezá a escribir su nombre y elegilo de la lista para no duplicarlo.</div>
+        <div style="color:var(--grey);font-size:0.72rem;margin-top:4px;">Si el jugador ya está registrado, empezá a escribir su nombre y elegilo de la lista para no duplicarlo.${esSuma ? ' Elegí también la categoría individual de cada jugador.' : ''}</div>
         <button class="btn btn-outline btn-block" id="btn-generar-llave" style="margin-top:16px;" ${parejas.length<2?'disabled':''}>
           ${bracket ? 'Regenerar llave' : 'Generar llave'}
         </button>
       </div>
       <div>
-        <label>Llave — ${CATEGORIA_LABEL[cat]}</label>
+        <label>Llave — ${getCategoriaLabel(state,cat)}</label>
         ${ bracket ? '<div class="bracket-wrap"><div class="bracket" id="bracket-view"></div></div>' : '<div class="empty-state">Generá la llave.</div>' }
       </div>
     </div>
@@ -439,9 +482,17 @@ function wireCategoriaContent(t, cat){
     const j1 = document.getElementById('new-j1').value.trim();
     const j2 = document.getElementById('new-j2').value.trim();
     if(!j1 || !j2){ toast('Completá los nombres'); return; }
-    const j1_id = resolverJugadorId(state, j1, cat);
-    const j2_id = resolverJugadorId(state, j2, cat);
-    t.parejas[cat].push({ id: uid('p'), j1_id, j2_id, j1, j2, telefono:'', estado:'aprobada' });
+    const esSuma = isCategoriaSuma(cat);
+    const catJ1El = document.getElementById('new-j1-cat');
+    const catJ2El = document.getElementById('new-j2-cat');
+    const cat_j1 = esSuma ? catJ1El.value : null;
+    const cat_j2 = esSuma ? catJ2El.value : null;
+    // Para Suma, cada jugador se resuelve con su propia categoría (no con la del torneo)
+    const j1_id = resolverJugadorId(state, j1, esSuma ? cat_j1 : cat);
+    const j2_id = resolverJugadorId(state, j2, esSuma ? cat_j2 : cat);
+    const nuevaPareja = { id: uid('p'), j1_id, j2_id, j1, j2, telefono:'', estado:'aprobada' };
+    if(esSuma){ nuevaPareja.cat_j1 = cat_j1; nuevaPareja.cat_j2 = cat_j2; }
+    t.parejas[cat].push(nuevaPareja);
     persist(); render();
   };
 
@@ -547,7 +598,7 @@ function renderPartidosPanel(t){
     <div class="panel">
       <h2>Próximos partidos</h2>
       <div class="grid-3" style="margin-bottom:14px;">
-        <div class="field"><label>Categoría</label><select id="pp-cat">${t.categorias.map(c=>`<option value="${c}">${CATEGORIA_LABEL[c]}</option>`).join('')}</select></div>
+        <div class="field"><label>Categoría</label><select id="pp-cat">${t.categorias.map(c=>`<option value="${c}">${getCategoriaLabel(state,c)}</option>`).join('')}</select></div>
         <div class="field"><label>Pareja A</label><select id="pp-a"></select></div>
         <div class="field"><label>Pareja B</label><select id="pp-b"></select></div>
       </div>
@@ -563,7 +614,7 @@ function renderPartidosPanel(t){
           partidos.map(p=>`
             <div class="pareja-row">
               <span class="nombre">
-                <span style="color:var(--lime);font-weight:800;">${CATEGORIA_LABEL[p.categoria]||p.categoria}</span>
+                <span style="color:var(--lime);font-weight:800;">${getCategoriaLabel(state,p.categoria)}</span>
                 — ${escapeHtml(p.equipoA)} vs ${escapeHtml(p.equipoB)}
                 <span style="display:block;color:var(--grey);font-size:0.78rem;font-weight:500;">${formatFechaCorta(p.fecha)}${p.hora?` — ${p.hora}`:''}${p.cancha?` · ${escapeHtml(p.cancha)}`:''}</span>
               </span>
@@ -628,7 +679,31 @@ function renderConfigSection(){
   if(!state.config.puntos) state.config.puntos = {...DEFAULT_PUNTOS_CONFIG};
   const p = state.config.puntos;
 
+  const sumaActuales = getCategoriasSumaConfig(state);
+
   el.innerHTML = `
+    <div class="panel">
+      <h2>Categorías "Suma"</h2>
+      <p style="color:var(--grey);font-size:0.85rem;margin-bottom:18px;max-width:60ch;">
+        Creá las categorías Suma que necesites (Suma 5, Suma 11, Suma 14, Suma 16, la que sea).
+        La categoría de la pareja sale de sumar la categoría individual de cada jugador. Una vez creadas,
+        vas a poder tildarlas como cualquier otra categoría al armar un torneo.
+      </p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+        ${sumaActuales.length===0 ? '<div class="empty-state">Todavía no creaste ninguna.</div>' :
+          sumaActuales.map(n=>`
+            <div class="check-pill active" style="display:flex;align-items:center;gap:8px;">
+              Suma ${n}
+              <span class="x" data-quitar-suma="${n}" style="cursor:pointer;">✕</span>
+            </div>
+          `).join('')
+        }
+      </div>
+      <div style="display:flex;gap:10px;max-width:320px;">
+        <input type="number" min="2" step="1" id="nueva-suma" placeholder="Ej: 16">
+        <button class="btn btn-primary btn-sm" id="btn-agregar-suma">+ Agregar</button>
+      </div>
+    </div>
     <div class="panel">
       <h2>Puntos de ranking por posición final</h2>
       <p style="color:var(--grey);font-size:0.85rem;margin-bottom:18px;max-width:60ch;">
@@ -657,6 +732,28 @@ function renderConfigSection(){
     });
     persist();
   };
+
+  document.getElementById('btn-agregar-suma').onclick = ()=>{
+    const input = document.getElementById('nueva-suma');
+    const n = parseInt(input.value, 10);
+    if(!n || n<2){ toast('Ingresá un número válido'); return; }
+    state.config.categoriasSuma = state.config.categoriasSuma || [];
+    if(state.config.categoriasSuma.includes(n)){ toast(`Suma ${n} ya existe`); return; }
+    state.config.categoriasSuma.push(n);
+    persist(); render();
+  };
+
+  document.querySelectorAll('[data-quitar-suma]').forEach(el=>{
+    el.onclick = ()=>{
+      const n = parseInt(el.dataset.quitarSuma, 10);
+      const code = 'suma' + n;
+      const enUso = state.torneos.some(t=>(t.categorias||[]).includes(code));
+      if(enUso){ toast(`Suma ${n} está en uso en algún torneo, no se puede quitar`); return; }
+      if(!confirm(`¿Quitar Suma ${n}?`)) return;
+      state.config.categoriasSuma = (state.config.categoriasSuma||[]).filter(x=>x!==n);
+      persist(); render();
+    };
+  });
 }
 
 // ---- SECCIÓN JUGADORES ----
@@ -810,7 +907,7 @@ function editarJugador(jId){
             return `
               <div class="pareja-row">
                 <span class="nombre">${torneo ? escapeHtml(torneo.nombre) : 'Torneo eliminado'}
-                  <span style="color:var(--grey);font-size:0.78rem;font-weight:500;"> — ${CATEGORIA_LABEL[h.categoria] || h.categoria} · ${POSICION_LABELS[h.posicion] || h.posicion || ''}</span>
+                  <span style="color:var(--grey);font-size:0.78rem;font-weight:500;"> — ${getCategoriaLabel(state,h.categoria)} · ${POSICION_LABELS[h.posicion] || h.posicion || ''}</span>
                 </span>
                 <span style="color:var(--lime);font-weight:800;flex-shrink:0;">+${h.puntos_ganados} pts</span>
               </div>

@@ -292,6 +292,10 @@
         <div class="field"><label>Torneo</label><select id="insc-torneo" required></select></div>
         <div class="field"><label>Categoría</label><select id="insc-categoria" required></select></div>
       </div>
+      <div class="form-row" id="insc-suma-cats" style="display:none;">
+        <div class="field"><label>Categoría de Jugador 1</label><select id="insc-cat-j1"></select></div>
+        <div class="field"><label>Categoría de Jugador 2</label><select id="insc-cat-j2"></select></div>
+      </div>
       <div class="field"><label>Teléfono de contacto</label><input type="tel" id="telefono" required placeholder="11 5555-5555"></div>
       <button type="submit" class="btn btn-primary" style="align-self:flex-start; margin-top:8px;">Enviar postulación</button>
     </form>
@@ -330,8 +334,9 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import {
   SUPABASE_URL, SUPABASE_ANON_KEY, CATEGORIAS, CATEGORIA_LABEL,
-  uid, roundLabel, loadState, saveState, isAprobada, resolverJugadorId
-} from './shared.js?v=4';
+  uid, roundLabel, loadState, saveState, isAprobada, resolverJugadorId,
+  isCategoriaSuma, getCategoriaLabel
+} from './shared.js?v=5';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let state = null;
@@ -345,7 +350,7 @@ function renderTorneosGrid(){
         <div><span class="badge ${t.inscripcionAbierta ? 'badge-abierto' : 'badge-cerrado'}">${t.inscripcionAbierta ? 'Inscripción Abierta' : 'Inscripción Cerrada'}</span></div>
         <h3 style="font-family:var(--font-display);">${t.nombre}</h3>
         <div style="font-size:0.8rem; color:var(--grey);">${t.fecha} — <b>${t.lugar}</b></div>
-        <div class="chips">${t.categorias.map(c=>`<span class="chip">${CATEGORIA_LABEL[c]}</span>`).join('')}</div>
+        <div class="chips">${t.categorias.map(c=>`<span class="chip">${getCategoriaLabel(state,c)}</span>`).join('')}</div>
       </div>
     `;
   }).join('');
@@ -378,10 +383,16 @@ function getPartidosPendientes(){
 function poblarFiltroCategoriaProximos(){
   const sel = document.getElementById('select-cat-proximos');
   const categoriasConPartidos = [...new Set(getPartidosPendientes().map(p=>p.categoria))];
-  const catsOrdenadas = CATEGORIAS.filter(c=>categoriasConPartidos.includes(c));
+  const orden = c => {
+    const i = CATEGORIAS.indexOf(c);
+    if(i !== -1) return i;
+    const m = /^suma(\d+)$/.exec(c);
+    return 100 + (m ? Number(m[1]) : 0);
+  };
+  const catsOrdenadas = categoriasConPartidos.sort((a,b)=>orden(a)-orden(b));
   const valorPrevio = sel.value || 'todas';
   sel.innerHTML = '<option value="todas">Todas las categorías</option>' +
-    catsOrdenadas.map(c=>`<option value="${c}">${CATEGORIA_LABEL[c]}</option>`).join('');
+    catsOrdenadas.map(c=>`<option value="${c}">${getCategoriaLabel(state,c)}</option>`).join('');
   sel.value = [...sel.options].some(o=>o.value===valorPrevio) ? valorPrevio : 'todas';
 }
 
@@ -403,7 +414,7 @@ function renderProximosPartidos(){
     return `
       <div class="match-card">
         <div class="match-head">
-          <span class="cat-tag">${CATEGORIA_LABEL[p.categoria] || p.categoria} CATEGORÍA</span>
+          <span class="cat-tag">${getCategoriaLabel(state,p.categoria)} CATEGORÍA</span>
           <span style="color:var(--grey)">${escapeHtml(p.torneoNombre || '')}</span>
         </div>
         <div class="match-body">
@@ -448,15 +459,35 @@ function populateSelectors(){
 
   function refreshCatOptions(torneoId, target){
     const t = state.torneos.find(x=>x.id===torneoId);
-    target.innerHTML = (t?.categorias||[]).map(c=>`<option value="${c}">${CATEGORIA_LABEL[c]}</option>`).join('');
+    target.innerHTML = (t?.categorias||[]).map(c=>`<option value="${c}">${getCategoriaLabel(state,c)}</option>`).join('');
+  }
+
+  function refreshSumaFields(){
+    const sumaWrap = document.getElementById('insc-suma-cats');
+    const selJ1 = document.getElementById('insc-cat-j1');
+    const selJ2 = document.getElementById('insc-cat-j2');
+    if(isCategoriaSuma(inscC.value)){
+      const opts = CATEGORIAS.map(c=>`<option value="${c}">${CATEGORIA_LABEL[c]}</option>`).join('');
+      selJ1.innerHTML = opts;
+      selJ2.innerHTML = opts;
+      selJ1.required = true; selJ2.required = true;
+      sumaWrap.style.display = 'flex';
+    } else {
+      selJ1.required = false; selJ2.required = false;
+      sumaWrap.style.display = 'none';
+    }
   }
 
   refreshCatOptions(selT.value, selC);
-  if(torneosConInscripcion.length > 0) refreshCatOptions(inscT.value, inscC);
+  if(torneosConInscripcion.length > 0){
+    refreshCatOptions(inscT.value, inscC);
+    refreshSumaFields();
+  }
 
   selT.onchange = ()=>{ refreshCatOptions(selT.value, selC); renderLlave(); };
   selC.onchange = renderLlave;
-  inscT.onchange = ()=> refreshCatOptions(inscT.value, inscC);
+  inscT.onchange = ()=>{ refreshCatOptions(inscT.value, inscC); refreshSumaFields(); };
+  inscC.onchange = refreshSumaFields;
 }
 
 function teamLabel(team){
@@ -549,10 +580,22 @@ document.getElementById('form-inscripcion').addEventListener('submit', async fun
   const t = state.torneos.find(x=>x.id===torneoId);
   if(!t || !cat){ return; }
   if(!t.inscripcionAbierta){ alert('La inscripción para este torneo ya está cerrada.'); populateSelectors(); return; }
+
+  const esSuma = isCategoriaSuma(cat);
+  let cat_j1 = null, cat_j2 = null;
+  if(esSuma){
+    cat_j1 = document.getElementById('insc-cat-j1').value;
+    cat_j2 = document.getElementById('insc-cat-j2').value;
+    if(!cat_j1 || !cat_j2){ alert('Elegí la categoría de cada jugador.'); return; }
+  }
+
   t.parejas[cat] = t.parejas[cat] || [];
-  const j1_id = resolverJugadorId(state, j1, cat);
-  const j2_id = resolverJugadorId(state, j2, cat);
-  t.parejas[cat].push({ id: uid('p'), j1_id, j2_id, j1, j2, telefono, estado:'pendiente' });
+  // Para Suma, cada jugador se resuelve con su propia categoría declarada (no con la del torneo)
+  const j1_id = resolverJugadorId(state, j1, esSuma ? cat_j1 : cat);
+  const j2_id = resolverJugadorId(state, j2, esSuma ? cat_j2 : cat);
+  const nuevaPareja = { id: uid('p'), j1_id, j2_id, j1, j2, telefono, estado:'pendiente' };
+  if(esSuma){ nuevaPareja.cat_j1 = cat_j1; nuevaPareja.cat_j2 = cat_j2; }
+  t.parejas[cat].push(nuevaPareja);
   
   try{
     await saveState(supabase, state);
