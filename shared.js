@@ -205,6 +205,30 @@ export function getPuntosConfig(state){
   return { ...DEFAULT_PUNTOS_CONFIG, ...(state.config && state.config.puntos ? state.config.puntos : {}) };
 }
 
+// Recorre todas las llaves generadas y cuenta partidos realmente jugados
+// (no cuenta los "bye") para un jugador, sea cual sea la pareja con la que jugó.
+export function getJugadorPartidosStats(state, jugadorId){
+  let ganados = 0, perdidos = 0;
+  (state.torneos || []).forEach(t=>{
+    Object.values(t.brackets || {}).forEach(rounds=>{
+      if(!rounds) return;
+      rounds.forEach(round=>{
+        round.forEach(match=>{
+          const { teamA, teamB, winner } = match;
+          if(!teamA || !teamB || teamA.bye || teamB.bye) return; // no es un partido real
+          const esA = teamA.j1_id === jugadorId || teamA.j2_id === jugadorId;
+          const esB = teamB.j1_id === jugadorId || teamB.j2_id === jugadorId;
+          if(!esA && !esB) return;
+          if(!winner) return; // todavía no se jugó
+          const gano = (esA && winner.id === teamA.id) || (esB && winner.id === teamB.id);
+          if(gano) ganados++; else perdidos++;
+        });
+      });
+    });
+  });
+  return { ganados, perdidos };
+}
+
 function awardPoints(state, torneoId, categoria, parejaId, puntos, posicion){
   if(!puntos) return;
   const torneo = state.torneos.find(t=>t.id===torneoId);
