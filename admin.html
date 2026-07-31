@@ -141,6 +141,7 @@
 
 <div class="section-tabs">
   <button class="section-tab active" data-section="torneos">Torneos & Llave</button>
+  <button class="section-tab" data-section="partidos">Partidos</button>
   <button class="section-tab" data-section="jugadores">Jugadores</button>
   <button class="section-tab" data-section="config">Configuración</button>
 </div>
@@ -165,6 +166,7 @@ let state = null;
 let activeTorneoId = null;
 let activeTab = {};
 let currentSection = 'torneos';
+let partidosTorneoId = null;
 let jugadoresSearchQuery = '';
 let lastStateJson = '';
 let isSaving = false;
@@ -204,6 +206,7 @@ function render(){
       </div>` : '<div></div>'}
       <div class="main">
         <div id="section-torneos" class="section ${currentSection==='torneos'?'active':''}"></div>
+        <div id="section-partidos" class="section ${currentSection==='partidos'?'active':''}"></div>
         <div id="section-jugadores" class="section ${currentSection==='jugadores'?'active':''}"></div>
         <div id="section-config" class="section ${currentSection==='config'?'active':''}"></div>
       </div>
@@ -223,6 +226,8 @@ function render(){
 
   if(currentSection==='torneos'){
     renderTorneosSection();
+  } else if(currentSection==='partidos'){
+    renderPartidosSection();
   } else if(currentSection==='jugadores'){
     renderJugadoresSection();
   } else {
@@ -285,7 +290,6 @@ function renderTorneoPanel(t){
       </div>
     </div>
     ${renderPostulacionesPanel(t)}
-    ${renderPartidosPanel(t)}
     <div class="panel">
       <h2>Parejas y llave</h2>
       ${t.categorias.length===0 ? '<div class="empty-state">Elegí al menos una categoría.</div>' : `
@@ -337,7 +341,6 @@ function wireTorneoPanel(t){
   });
 
   wirePostulacionesPanel(t);
-  wirePartidosPanel(t);
 
   if(t.categorias.length>0){
     const currentCat = activeTab[t.id] || t.categorias[0];
@@ -587,6 +590,36 @@ function formatFechaCorta(fecha){
   const [y,m,d] = fecha.split('-').map(Number);
   if(!y||!m||!d) return fecha;
   return `${String(d).padStart(2,'0')}/${String(m).padStart(2,'0')}/${y}`;
+}
+
+// ---- SECCIÓN PARTIDOS ----
+function renderPartidosSection(){
+  const el = document.getElementById('section-partidos');
+  if(!state.torneos || state.torneos.length===0){
+    el.innerHTML = `<div class="panel"><h2>Partidos</h2><div class="empty-state">Todavía no hay torneos creados.</div></div>`;
+    return;
+  }
+  if(!partidosTorneoId || !state.torneos.find(x=>x.id===partidosTorneoId)){
+    partidosTorneoId = state.torneos[0].id;
+  }
+  const t = state.torneos.find(x=>x.id===partidosTorneoId);
+  el.innerHTML = `
+    <div class="panel">
+      <h2>Programar partidos</h2>
+      <div class="field" style="max-width:420px;">
+        <label>Torneo</label>
+        <select id="pp-torneo">
+          ${state.torneos.map(tr=>`<option value="${tr.id}" ${tr.id===t.id?'selected':''}>${escapeHtml(tr.nombre)}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    ${renderPartidosPanel(t)}
+  `;
+  document.getElementById('pp-torneo').onchange = (e)=>{
+    partidosTorneoId = e.target.value;
+    render();
+  };
+  wirePartidosPanel(t);
 }
 
 function renderPartidosPanel(t){
