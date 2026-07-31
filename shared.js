@@ -4,9 +4,16 @@
 export const SUPABASE_URL = 'https://cewwbutnpkjocjynapem.supabase.co';
 export const SUPABASE_ANON_KEY = 'sb_publishable_C3nZa7XNVocbPOXOGXMNUA_ZhAQZobf';
 
-export const CATEGORIAS = ['3ra','4ta','5ta','6ta','7ma'];
-export const CATEGORIA_LABEL = { '3ra':'3ª','4ta':'4ª','5ta':'5ª','6ta':'6ª','7ma':'7ª' };
+export const CATEGORIAS = ['3ra', '4ta', '5ta', '6ta', '7ma', '8va'];
 
+export const CATEGORIA_LABEL = {
+  '3ra': '3ª',
+  '4ta': '4ª',
+  '5ta': '5ª',
+  '6ta': '6ª',
+  '7ma': '7ª',
+  '8va': '8ª'
+};
 // ============================================================
 // Categorías "Suma" (p.ej. Suma 11, Suma 14): la categoría de la
 // pareja surge de sumar la categoría individual de cada jugador.
