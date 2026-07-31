@@ -288,10 +288,15 @@
         <div class="field"><label>Jugador 1</label><input type="text" id="j1" required placeholder="Nombre y apellido"></div>
         <div class="field"><label>Jugador 2</label><input type="text" id="j2" required placeholder="Nombre y apellido"></div>
       </div>
-      <div class="form-row">
-        <div class="field"><label>Torneo</label><select id="insc-torneo" required></select></div>
-        <div class="field"><label>Categoría</label><select id="insc-categoria" required></select></div>
-      </div>
+    <div class="form-row">
+      <div class="field"><label>Torneo</label><select id="insc-torneo" required></select></div>
+      <div class="field"><label>Categoría</label><select id="insc-categoria" required></select></div>
+    </div>
+    <!-- ✅ NUEVO: Row para categorías individuales en torneos personalizados -->
+    <div class="form-row" id="categorias-individuales-row" style="display:none;">
+      <div class="field"><label>Categoría Jugador 1</label><select id="insc-cat-j1" required></select></div>
+      <div class="field"><label>Categoría Jugador 2</label><select id="insc-cat-j2" required></select></div>
+    </div>
       <div class="field"><label>Teléfono de contacto</label><input type="tel" id="telefono" required placeholder="11 5555-5555"></div>
       <button type="submit" class="btn btn-primary" style="align-self:flex-start; margin-top:8px;">Enviar postulación</button>
     </form>
