@@ -446,14 +446,10 @@ function populateSelectors(){
     inscT.innerHTML = torneosConInscripcion.map(t=>`<option value="${t.id}">${t.nombre}</option>`).join('');
   }
 
-function refreshCatOptions(torneoId, target){
-  const t = state.torneos.find(x=>x.id===torneoId);
-  if(t?.esPersonalizado && t.categoriasOriginales){
-    target.innerHTML = (t.categoriasOriginales||[]).map(c=>`<option value="${c}">${CATEGORIA_LABEL[c]}</option>`).join('');
-  } else {
+  function refreshCatOptions(torneoId, target){
+    const t = state.torneos.find(x=>x.id===torneoId);
     target.innerHTML = (t?.categorias||[]).map(c=>`<option value="${c}">${CATEGORIA_LABEL[c]}</option>`).join('');
   }
-}
 
   refreshCatOptions(selT.value, selC);
   if(torneosConInscripcion.length > 0) refreshCatOptions(inscT.value, inscC);
@@ -466,11 +462,7 @@ function refreshCatOptions(torneoId, target){
 function teamLabel(team){
   if(!team) return '- / -';
   if(team.bye) return 'BYE';
-  let label = `${team.j1} / ${team.j2}`;
-  if(team.categoriaOriginal && CATEGORIA_LABEL[team.categoriaOriginal]){
-    label += ` (${CATEGORIA_LABEL[team.categoriaOriginal]})`;
-  }
-  return label;
+  return `${team.j1} / ${team.j2}`;
 }
 
 function renderLlave(){
@@ -558,11 +550,9 @@ document.getElementById('form-inscripcion').addEventListener('submit', async fun
   if(!t || !cat){ return; }
   if(!t.inscripcionAbierta){ alert('La inscripción para este torneo ya está cerrada.'); populateSelectors(); return; }
   t.parejas[cat] = t.parejas[cat] || [];
-    const categoryForPlayers = t.esPersonalizado ? cat : cat;
-    const j1_id = resolverJugadorId(state, j1, categoryForPlayers);
-    const j2_id = resolverJugadorId(state, j2, categoryForPlayers);
-    const categoryKey = t.esPersonalizado ? 'personalizado' : cat;
-    t.parejas[categoryKey].push({ id: uid('p'), j1_id, j2_id, j1, j2, telefono, estado:'pendiente', categoriaOriginal: t.esPersonalizado ? cat : undefined });
+  const j1_id = resolverJugadorId(state, j1, cat);
+  const j2_id = resolverJugadorId(state, j2, cat);
+  t.parejas[cat].push({ id: uid('p'), j1_id, j2_id, j1, j2, telefono, estado:'pendiente' });
   
   try{
     await saveState(supabase, state);
