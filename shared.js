@@ -4,8 +4,8 @@
 export const SUPABASE_URL = 'https://cewwbutnpkjocjynapem.supabase.co';
 export const SUPABASE_ANON_KEY = 'sb_publishable_C3nZa7XNVocbPOXOGXMNUA_ZhAQZobf';
 
-export const CATEGORIAS = ['3ra','4ta','5ta','6ta','7ma'];
-export const CATEGORIA_LABEL = { '3ra':'3ª','4ta':'4ª','5ta':'5ª','6ta':'6ª','7ma':'7ª' };
+export const CATEGORIAS = ['3ra','4ta','5ta','6ta','7ma','suma11','suma14'];
+export const CATEGORIA_LABEL = { '3ra':'3ª','4ta':'4ª','5ta':'5ª','6ta':'6ª','7ma':'7ª','suma11':'Suma 11','suma14':'Suma 14' };
 
 // ============================================================
 // Configuración de puntuación (editable desde el panel de admin;
